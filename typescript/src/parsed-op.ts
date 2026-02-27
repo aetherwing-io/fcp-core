@@ -1,4 +1,4 @@
-import { tokenize, isKeyValue, parseKeyValue, isSelector, isArrow } from "./tokenizer.js";
+import { tokenize, isKeyValue, parseKeyValueWithMeta, isSelector, isArrow } from "./tokenizer.js";
 
 /**
  * A successfully parsed operation.
@@ -9,6 +9,8 @@ export interface ParsedOp {
   params: Record<string, string>;
   selectors: string[];
   raw: string;
+  /** Set of param keys whose values were explicitly quoted (e.g., key:"value") */
+  quotedParams?: Set<string>;
 }
 
 /**
@@ -40,20 +42,22 @@ export function parseOp(input: string): ParsedOp | ParseError {
   const positionals: string[] = [];
   const params: Record<string, string> = {};
   const selectors: string[] = [];
+  const quotedParams = new Set<string>();
 
   for (let i = 1; i < tokens.length; i++) {
     const token = tokens[i];
     if (isSelector(token)) {
       selectors.push(token);
     } else if (isKeyValue(token)) {
-      const { key, value } = parseKeyValue(token);
+      const { key, value, wasQuoted } = parseKeyValueWithMeta(token);
       params[key] = value;
+      if (wasQuoted) quotedParams.add(key);
     } else {
       positionals.push(token);
     }
   }
 
-  return { verb, positionals, params, selectors, raw };
+  return { verb, positionals, params, selectors, raw, quotedParams };
 }
 
 /**

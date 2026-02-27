@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tokenize, isKeyValue, parseKeyValue, isArrow, isSelector } from "../src/tokenizer.js";
+import { tokenize, isKeyValue, parseKeyValue, parseKeyValueWithMeta, isArrow, isSelector } from "../src/tokenizer.js";
 
 describe("tokenize", () => {
   it("splits simple tokens", () => {
@@ -42,8 +42,28 @@ describe("tokenize", () => {
     ]);
   });
 
-  it("handles embedded quoted values (key:\"value\")", () => {
-    expect(tokenize('label:"Line1\\nLine2"')).toEqual(["label:Line1\nLine2"]);
+  it("handles embedded quoted values (key:\"value\") — preserves quotes in token", () => {
+    expect(tokenize('label:"Line1\\nLine2"')).toEqual(['label:"Line1\nLine2"']);
+  });
+
+  it("parseKeyValue strips preserved quotes for backwards compat", () => {
+    const { key, value } = parseKeyValue('label:"Line1\nLine2"');
+    expect(key).toBe("label");
+    expect(value).toBe("Line1\nLine2");
+  });
+
+  it("parseKeyValueWithMeta reports wasQuoted flag", () => {
+    const result = parseKeyValueWithMeta('engine_version:"15"');
+    expect(result.key).toBe("engine_version");
+    expect(result.value).toBe("15");
+    expect(result.wasQuoted).toBe(true);
+  });
+
+  it("parseKeyValueWithMeta reports wasQuoted=false for unquoted", () => {
+    const result = parseKeyValueWithMeta("port:80");
+    expect(result.key).toBe("port");
+    expect(result.value).toBe("80");
+    expect(result.wasQuoted).toBe(false);
   });
 
   it("converts multiple \\n sequences", () => {

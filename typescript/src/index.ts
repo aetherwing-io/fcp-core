@@ -3,6 +3,7 @@ export {
   tokenize,
   isKeyValue,
   parseKeyValue,
+  parseKeyValueWithMeta,
   isArrow,
   isSelector,
 } from "./tokenizer.js";
