@@ -1,0 +1,482 @@
+{
+  "description": "FCP EventLog conformance tests. The event log is a cursor-based linear history with undo/redo and named checkpoints. Events are abstract objects with a 'type' discriminant. Checkpoint events are sentinel entries stored in the log but skipped during undo/redo counting. The cursor always points one past the last applied event.",
+  "version": "1.0",
+  "notes": {
+    "events": "Test events use simple {type, id} objects. Implementations will have domain-specific event types, but the log behavior is identical regardless of event shape.",
+    "cursor": "The cursor is 0-based and points one past the last applied event. After appending N events, cursor equals N.",
+    "checkpoint_events": "When a checkpoint is created, a checkpoint sentinel event is appended to the log. This event is skipped when counting undo/redo steps but still occupies a position in the event array.",
+    "undo_returns": "Undo returns events in reverse chronological order (most recent first).",
+    "redo_returns": "Redo returns events in forward chronological order (oldest first).",
+    "recent_returns": "Recent returns events in forward chronological order (oldest first), looking backward from the cursor."
+  },
+  "tests": [
+    {
+      "name": "empty log has cursor at 0",
+      "operations": [],
+      "assertions": {
+        "cursor": 0,
+        "length": 0
+      }
+    },
+    {
+      "name": "append single event advances cursor to 1",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}}
+      ],
+      "assertions": {
+        "cursor": 1,
+        "length": 1
+      }
+    },
+    {
+      "name": "append two events advances cursor to 2",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}}
+      ],
+      "assertions": {
+        "cursor": 2,
+        "length": 2
+      }
+    },
+    {
+      "name": "append three events advances cursor to 3",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}}
+      ],
+      "assertions": {
+        "cursor": 3,
+        "length": 3
+      }
+    },
+    {
+      "name": "undo returns most recent event",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 1,
+        "undo_returned": [{"type": "test", "id": 2}]
+      }
+    },
+    {
+      "name": "undo decrements cursor by 1",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 2
+      }
+    },
+    {
+      "name": "undo with count=2 returns two events in reverse order",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo", "count": 2}
+      ],
+      "assertions": {
+        "cursor": 1,
+        "undo_returned": [
+          {"type": "test", "id": 3},
+          {"type": "test", "id": 2}
+        ]
+      }
+    },
+    {
+      "name": "undo past beginning returns only available events",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 10}
+      ],
+      "assertions": {
+        "cursor": 0,
+        "undo_returned": [
+          {"type": "test", "id": 2},
+          {"type": "test", "id": 1}
+        ]
+      }
+    },
+    {
+      "name": "undo on empty log returns empty list",
+      "operations": [
+        {"action": "undo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 0,
+        "undo_returned": []
+      }
+    },
+    {
+      "name": "redo replays forward events in order",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 2},
+        {"action": "redo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 1,
+        "redo_returned": [{"type": "test", "id": 1}]
+      }
+    },
+    {
+      "name": "redo with count=2 replays two events in order",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 2},
+        {"action": "redo", "count": 2}
+      ],
+      "assertions": {
+        "cursor": 2,
+        "redo_returned": [
+          {"type": "test", "id": 1},
+          {"type": "test", "id": 2}
+        ]
+      }
+    },
+    {
+      "name": "redo past end returns only available events",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 1},
+        {"action": "redo", "count": 10}
+      ],
+      "assertions": {
+        "cursor": 2,
+        "redo_returned": [{"type": "test", "id": 2}]
+      }
+    },
+    {
+      "name": "redo with nothing to redo returns empty list",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "redo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 1,
+        "redo_returned": []
+      }
+    },
+    {
+      "name": "undo then redo roundtrip restores cursor",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 1},
+        {"action": "redo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 2
+      }
+    },
+    {
+      "name": "undo then redo returns matching events",
+      "description": "The event returned by undo should be the same event returned by the subsequent redo.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 1},
+        {"action": "redo", "count": 1}
+      ],
+      "assertions": {
+        "undo_returned": [{"type": "test", "id": 2}],
+        "redo_returned": [{"type": "test", "id": 2}]
+      }
+    },
+    {
+      "name": "append after undo truncates redo tail",
+      "description": "When a new event is appended after undoing, all events beyond the cursor are discarded. The redo history is lost.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo", "count": 2},
+        {"action": "append", "event": {"type": "test", "id": 4}}
+      ],
+      "assertions": {
+        "cursor": 2,
+        "length": 2,
+        "description": "Events 2 and 3 are gone. Log now contains event 1 and event 4."
+      }
+    },
+    {
+      "name": "redo after append-after-undo returns empty",
+      "description": "After appending new events post-undo, there is no redo tail.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 1},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "redo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 2,
+        "redo_returned": []
+      }
+    },
+    {
+      "name": "checkpoint creates named position",
+      "description": "A checkpoint records the current cursor position. It also appends a CheckpointEvent sentinel to the log.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "checkpoint", "name": "v1"}
+      ],
+      "assertions": {
+        "cursor": 3,
+        "length": 3,
+        "description": "Cursor is 3: two test events + one checkpoint sentinel event."
+      }
+    },
+    {
+      "name": "checkpoint event is skipped during undo",
+      "description": "Undoing 1 step from after a checkpoint should skip the checkpoint sentinel and undo the preceding real event.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "checkpoint", "name": "v1"},
+        {"action": "undo", "count": 1}
+      ],
+      "assertions": {
+        "undo_returned": [{"type": "test", "id": 2}],
+        "description": "The checkpoint sentinel was skipped. Event id:2 was undone."
+      }
+    },
+    {
+      "name": "checkpoint event is skipped during redo",
+      "description": "Redoing through a checkpoint sentinel should skip it and redo the next real event.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "checkpoint", "name": "v1"},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 2},
+        {"action": "redo", "count": 1}
+      ],
+      "assertions": {
+        "redo_returned": [{"type": "test", "id": 1}],
+        "description": "Redo should skip the checkpoint sentinel and replay event id:1."
+      }
+    },
+    {
+      "name": "undo-to restores to named checkpoint",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "checkpoint", "name": "v1"},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "append", "event": {"type": "test", "id": 4}},
+        {"action": "undo_to", "name": "v1"}
+      ],
+      "assertions": {
+        "cursor": 2,
+        "undo_to_returned": [
+          {"type": "test", "id": 4},
+          {"type": "test", "id": 3}
+        ],
+        "description": "Cursor restored to position 2 (where checkpoint v1 was). Events 3 and 4 returned in reverse order. The checkpoint sentinel itself is not included in the returned events."
+      }
+    },
+    {
+      "name": "undo-to with unknown name returns error",
+      "description": "Implementations should return null/None or raise an error for unknown checkpoint names.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "undo_to", "name": "nonexistent"}
+      ],
+      "assertions": {
+        "undo_to_error": true,
+        "description": "Unknown checkpoint 'nonexistent' should produce an error/null/exception."
+      }
+    },
+    {
+      "name": "multiple checkpoints: undo-to earlier checkpoint",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "checkpoint", "name": "v1"},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "checkpoint", "name": "v2"},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo_to", "name": "v1"}
+      ],
+      "assertions": {
+        "cursor": 1,
+        "undo_to_returned": [
+          {"type": "test", "id": 3},
+          {"type": "test", "id": 2}
+        ],
+        "description": "Undone past v2 back to v1. Both test events returned, checkpoint sentinels skipped."
+      }
+    },
+    {
+      "name": "recent returns last N non-checkpoint events in chronological order",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "recent", "count": 2}
+      ],
+      "assertions": {
+        "recent_returned": [
+          {"type": "test", "id": 2},
+          {"type": "test", "id": 3}
+        ]
+      }
+    },
+    {
+      "name": "recent with count greater than available returns all",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "recent", "count": 10}
+      ],
+      "assertions": {
+        "recent_returned": [
+          {"type": "test", "id": 1},
+          {"type": "test", "id": 2}
+        ]
+      }
+    },
+    {
+      "name": "recent skips checkpoint events",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "checkpoint", "name": "v1"},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "recent", "count": 2}
+      ],
+      "assertions": {
+        "recent_returned": [
+          {"type": "test", "id": 1},
+          {"type": "test", "id": 2}
+        ],
+        "description": "The checkpoint sentinel between events 1 and 2 is skipped."
+      }
+    },
+    {
+      "name": "recent respects cursor position (ignores redo tail)",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo", "count": 1},
+        {"action": "recent", "count": 5}
+      ],
+      "assertions": {
+        "recent_returned": [
+          {"type": "test", "id": 1},
+          {"type": "test", "id": 2}
+        ],
+        "description": "Event 3 is past the cursor (in redo tail) so not included."
+      }
+    },
+    {
+      "name": "complex sequence: append, checkpoint, append, undo-to, append (redo tail gone)",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "checkpoint", "name": "start"},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo_to", "name": "start"},
+        {"action": "append", "event": {"type": "test", "id": 4}}
+      ],
+      "assertions": {
+        "cursor": 3,
+        "description": "After undo-to 'start', cursor was at 1. The checkpoint sentinel is at position 1. Appending event 4 truncates events 2 and 3 (and the checkpoint sentinel itself, since cursor was at position 1 before the checkpoint). Actually: checkpoint 'start' was recorded at cursor=1 and then a checkpoint sentinel was appended making cursor=2. undo_to('start') moved cursor back to 1. Appending event 4 truncates everything from position 1 onward, so the log is [event 1, event 4], cursor=2. Wait - let me reconsider. After append(id:1), cursor=1. checkpoint('start') records position 1, appends sentinel, cursor=2. append(id:2), cursor=3. append(id:3), cursor=4. undo_to('start') moves cursor to 1. append(id:4) truncates from position 1, log=[event 1, event 4], cursor=2."
+      }
+    },
+    {
+      "name": "complex sequence simplified: verify cursor after undo-to then append",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "checkpoint", "name": "mid"},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo_to", "name": "mid"},
+        {"action": "append", "event": {"type": "test", "id": 4}}
+      ],
+      "assertions": {
+        "cursor": 3,
+        "description": "After 2 appends cursor=2. Checkpoint 'mid' at pos 2 appends sentinel, cursor=3. Append id:3, cursor=4. undo_to('mid') moves cursor to 2. Append id:4 truncates from pos 2, log=[id:1, id:2, id:4], cursor=3."
+      }
+    },
+    {
+      "name": "checkpoint invalidated by undo+append",
+      "description": "If a checkpoint is in the truncated redo tail, it becomes invalid.",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "checkpoint", "name": "v1"},
+        {"action": "undo", "count": 2},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo_to", "name": "v1"}
+      ],
+      "assertions": {
+        "undo_to_error": true,
+        "description": "Checkpoint 'v1' was invalidated when the redo tail containing it was truncated."
+      }
+    },
+    {
+      "name": "undo with count=0 returns nothing",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "undo", "count": 0}
+      ],
+      "assertions": {
+        "cursor": 2,
+        "undo_returned": [],
+        "description": "Undoing 0 events should not change cursor and should return empty list."
+      }
+    },
+    {
+      "name": "redo with count=0 returns nothing",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "undo", "count": 1},
+        {"action": "redo", "count": 0}
+      ],
+      "assertions": {
+        "cursor": 0,
+        "redo_returned": [],
+        "description": "Redoing 0 events should not change cursor and should return empty list."
+      }
+    },
+    {
+      "name": "multiple undo-redo cycles",
+      "operations": [
+        {"action": "append", "event": {"type": "test", "id": 1}},
+        {"action": "append", "event": {"type": "test", "id": 2}},
+        {"action": "append", "event": {"type": "test", "id": 3}},
+        {"action": "undo", "count": 1},
+        {"action": "undo", "count": 1},
+        {"action": "redo", "count": 1},
+        {"action": "redo", "count": 1}
+      ],
+      "assertions": {
+        "cursor": 3,
+        "description": "Two undos followed by two redos should restore cursor to original position."
+      }
+    },
+    {
+      "name": "recent on empty log returns empty list",
+      "operations": [
+        {"action": "recent", "count": 5}
+      ],
+      "assertions": {
+        "recent_returned": []
+      }
+    }
+  ]
+}

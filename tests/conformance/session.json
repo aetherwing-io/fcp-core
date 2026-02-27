@@ -1,0 +1,289 @@
+{
+  "description": "FCP session command conformance tests. Session commands control the lifecycle of a document/project: creating, opening, saving, checkpointing, and undo/redo. The session handler tokenizes its input (respecting quotes) and dispatches based on the first token (the command).",
+  "version": "1.0",
+  "notes": {
+    "params": "Params are extracted from key:value tokens in the command string. The 'args' field contains non-param positional values relevant to the command.",
+    "command_case": "The command token should be lowercased for matching.",
+    "file_extensions": "Session commands are domain-agnostic. File extensions (.mid, .drawio, .tf) are implementation-specific."
+  },
+  "tests": [
+    {
+      "name": "new with no arguments",
+      "input": "new",
+      "expected": {
+        "command": "new",
+        "args": {},
+        "params": {}
+      }
+    },
+    {
+      "name": "new with quoted title",
+      "input": "new \"My Project\"",
+      "expected": {
+        "command": "new",
+        "args": {
+          "title": "My Project"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "new with unquoted title",
+      "input": "new Untitled",
+      "expected": {
+        "command": "new",
+        "args": {
+          "title": "Untitled"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "new with title and params",
+      "description": "Domain-specific params (tempo, time-sig, etc.) are passed through as key:value pairs.",
+      "input": "new \"My Song\" tempo:120",
+      "expected": {
+        "command": "new",
+        "args": {
+          "title": "My Song"
+        },
+        "params": {
+          "tempo": "120"
+        }
+      }
+    },
+    {
+      "name": "new with title and multiple params",
+      "input": "new \"My Song\" tempo:120 time-sig:3/4 key:Bb-major",
+      "expected": {
+        "command": "new",
+        "args": {
+          "title": "My Song"
+        },
+        "params": {
+          "tempo": "120",
+          "time-sig": "3/4",
+          "key": "Bb-major"
+        }
+      }
+    },
+    {
+      "name": "new with type param (drawio domain)",
+      "input": "new \"System Architecture\" type:architecture",
+      "expected": {
+        "command": "new",
+        "args": {
+          "title": "System Architecture"
+        },
+        "params": {
+          "type": "architecture"
+        }
+      }
+    },
+    {
+      "name": "open with file path",
+      "input": "open ./path/to/file.ext",
+      "expected": {
+        "command": "open",
+        "args": {
+          "path": "./path/to/file.ext"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "open with absolute path",
+      "input": "open /Users/test/project/song.mid",
+      "expected": {
+        "command": "open",
+        "args": {
+          "path": "/Users/test/project/song.mid"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "open with quoted path containing spaces",
+      "input": "open \"./my project/file name.mid\"",
+      "expected": {
+        "command": "open",
+        "args": {
+          "path": "./my project/file name.mid"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "save with no arguments",
+      "input": "save",
+      "expected": {
+        "command": "save",
+        "args": {},
+        "params": {}
+      }
+    },
+    {
+      "name": "save with as: param",
+      "input": "save as:./output.mid",
+      "expected": {
+        "command": "save",
+        "args": {},
+        "params": {
+          "as": "./output.mid"
+        }
+      }
+    },
+    {
+      "name": "save with quoted path in as: param",
+      "input": "save as:\"./my output/song.mid\"",
+      "expected": {
+        "command": "save",
+        "args": {},
+        "params": {
+          "as": "./my output/song.mid"
+        }
+      }
+    },
+    {
+      "name": "checkpoint with name",
+      "input": "checkpoint v1",
+      "expected": {
+        "command": "checkpoint",
+        "args": {
+          "name": "v1"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "checkpoint with hyphenated name",
+      "input": "checkpoint v1-layout-done",
+      "expected": {
+        "command": "checkpoint",
+        "args": {
+          "name": "v1-layout-done"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "undo with no arguments (default count=1)",
+      "input": "undo",
+      "expected": {
+        "command": "undo",
+        "args": {
+          "count": 1
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "undo with explicit count",
+      "input": "undo 3",
+      "expected": {
+        "command": "undo",
+        "args": {
+          "count": 3
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "undo to named checkpoint",
+      "input": "undo to:v1",
+      "expected": {
+        "command": "undo",
+        "args": {
+          "target": "v1"
+        },
+        "params": {
+          "to": "v1"
+        }
+      }
+    },
+    {
+      "name": "undo to checkpoint with hyphenated name",
+      "input": "undo to:v1-layout-done",
+      "expected": {
+        "command": "undo",
+        "args": {
+          "target": "v1-layout-done"
+        },
+        "params": {
+          "to": "v1-layout-done"
+        }
+      }
+    },
+    {
+      "name": "redo with no arguments (default count=1)",
+      "input": "redo",
+      "expected": {
+        "command": "redo",
+        "args": {
+          "count": 1
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "redo with explicit count",
+      "input": "redo 2",
+      "expected": {
+        "command": "redo",
+        "args": {
+          "count": 2
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "command is case-insensitive",
+      "input": "NEW \"My Project\"",
+      "expected": {
+        "command": "new",
+        "args": {
+          "title": "My Project"
+        },
+        "params": {}
+      }
+    },
+    {
+      "name": "save with positional path (alternative to as: param)",
+      "description": "Some implementations accept a bare positional path for save. This is implementation-optional but the parser should at minimum extract it as a positional.",
+      "input": "save ./output.mid",
+      "expected": {
+        "command": "save",
+        "args": {
+          "path": "./output.mid"
+        },
+        "params": {}
+      }
+    }
+  ],
+  "error_tests": [
+    {
+      "name": "empty input",
+      "input": "",
+      "expected_error": true,
+      "description": "Empty string should produce an error or 'unknown command'."
+    },
+    {
+      "name": "unknown command",
+      "input": "fly away",
+      "expected_error": true,
+      "description": "Unrecognized session commands should produce an error."
+    },
+    {
+      "name": "checkpoint without name",
+      "input": "checkpoint",
+      "expected_error": true,
+      "description": "Checkpoint requires a name argument."
+    },
+    {
+      "name": "open without path",
+      "input": "open",
+      "expected_error": true,
+      "description": "Open requires a file path argument."
+    }
+  ]
+}

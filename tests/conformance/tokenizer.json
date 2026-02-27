@@ -1,0 +1,224 @@
+{
+  "description": "FCP tokenizer conformance tests. The tokenizer splits an op string on whitespace while respecting quoted substrings. Quotes are stripped from the output. Key:value and selector tokens are preserved as-is (not split on colon). Arrow tokens (->, <->, --) pass through as single tokens.",
+  "version": "1.0",
+  "tests": [
+    {
+      "name": "basic whitespace splitting",
+      "input": "add svc Auth",
+      "expected": ["add", "svc", "Auth"]
+    },
+    {
+      "name": "single token",
+      "input": "tempo",
+      "expected": ["tempo"]
+    },
+    {
+      "name": "multiple spaces between tokens",
+      "input": "add   svc   Auth",
+      "expected": ["add", "svc", "Auth"]
+    },
+    {
+      "name": "tab characters as whitespace",
+      "input": "add\tsvc\tAuth",
+      "expected": ["add", "svc", "Auth"]
+    },
+    {
+      "name": "mixed spaces and tabs",
+      "input": "add \t svc\t Auth",
+      "expected": ["add", "svc", "Auth"]
+    },
+    {
+      "name": "empty string returns empty array",
+      "input": "",
+      "expected": []
+    },
+    {
+      "name": "whitespace-only string returns empty array",
+      "input": "   ",
+      "expected": []
+    },
+    {
+      "name": "leading whitespace trimmed",
+      "input": "  add svc Auth",
+      "expected": ["add", "svc", "Auth"]
+    },
+    {
+      "name": "trailing whitespace trimmed",
+      "input": "add svc Auth  ",
+      "expected": ["add", "svc", "Auth"]
+    },
+    {
+      "name": "leading and trailing whitespace trimmed",
+      "input": "  add svc Auth  ",
+      "expected": ["add", "svc", "Auth"]
+    },
+    {
+      "name": "double-quoted string preserved as single token",
+      "input": "add svc \"Auth Service\"",
+      "expected": ["add", "svc", "Auth Service"]
+    },
+    {
+      "name": "quoted string with multiple words",
+      "input": "title \"My Amazing Project\"",
+      "expected": ["title", "My Amazing Project"]
+    },
+    {
+      "name": "escaped double quote inside quoted string",
+      "input": "label Foo \"say \\\"hi\\\"\"",
+      "expected": ["label", "Foo", "say \"hi\""]
+    },
+    {
+      "name": "escaped backslash inside quoted string",
+      "input": "label Foo \"path\\\\to\\\\file\"",
+      "expected": ["label", "Foo", "path\\to\\file"]
+    },
+    {
+      "name": "empty quoted string",
+      "input": "label Foo \"\"",
+      "expected": ["label", "Foo", ""]
+    },
+    {
+      "name": "key:value token preserved as single token",
+      "input": "add svc Auth theme:blue",
+      "expected": ["add", "svc", "Auth", "theme:blue"]
+    },
+    {
+      "name": "multiple key:value tokens preserved",
+      "input": "add svc Auth theme:blue near:Gateway dir:right",
+      "expected": ["add", "svc", "Auth", "theme:blue", "near:Gateway", "dir:right"]
+    },
+    {
+      "name": "selector token preserved as single token",
+      "input": "remove @type:db",
+      "expected": ["remove", "@type:db"]
+    },
+    {
+      "name": "multiple selectors preserved",
+      "input": "remove @track:Piano @range:1.1-4.4",
+      "expected": ["remove", "@track:Piano", "@range:1.1-4.4"]
+    },
+    {
+      "name": "arrow token -> preserved",
+      "input": "connect A -> B",
+      "expected": ["connect", "A", "->", "B"]
+    },
+    {
+      "name": "bidirectional arrow <-> preserved",
+      "input": "connect A <-> B",
+      "expected": ["connect", "A", "<->", "B"]
+    },
+    {
+      "name": "undirected connector -- preserved",
+      "input": "connect A -- B",
+      "expected": ["connect", "A", "--", "B"]
+    },
+    {
+      "name": "mixed tokens: positionals, key:value, selectors, arrows",
+      "input": "connect A -> B label:\"data flow\" style:dashed @recent",
+      "expected": ["connect", "A", "->", "B", "label:data flow", "style:dashed", "@recent"]
+    },
+    {
+      "name": "quoted value in key:value param (embedded quotes)",
+      "description": "When a key:value has an embedded quoted value like label:\"text\", the quotes are consumed and the colon joins key to unquoted value.",
+      "input": "connect A -> B label:\"data flow\"",
+      "expected": ["connect", "A", "->", "B", "label:data flow"]
+    },
+    {
+      "name": "colon inside standalone quoted string is not a key:value",
+      "description": "A colon inside a standalone quoted token is literal text, not a key:value separator.",
+      "input": "label Foo \"key:not-a-param\"",
+      "expected": ["label", "Foo", "key:not-a-param"]
+    },
+    {
+      "name": "hash character in token (not a comment)",
+      "description": "The # character must not be treated as a comment delimiter. It appears in hex colors and sharp notes.",
+      "input": "style Auth fill:#ff0000",
+      "expected": ["style", "Auth", "fill:#ff0000"]
+    },
+    {
+      "name": "hash in pitch notation",
+      "input": "note Piano C#4 at:1.1",
+      "expected": ["note", "Piano", "C#4", "at:1.1"]
+    },
+    {
+      "name": "unicode characters in tokens",
+      "input": "add svc Sch\u00f6nheit theme:blue",
+      "expected": ["add", "svc", "Sch\u00f6nheit", "theme:blue"]
+    },
+    {
+      "name": "unicode characters in quoted strings",
+      "input": "title \"\u65e5\u672c\u8a9e\u306e\u30bf\u30a4\u30c8\u30eb\"",
+      "expected": ["title", "\u65e5\u672c\u8a9e\u306e\u30bf\u30a4\u30c8\u30eb"]
+    },
+    {
+      "name": "complex MIDI domain example",
+      "input": "note Piano C4 at:1.1 dur:quarter vel:80 ch:1",
+      "expected": ["note", "Piano", "C4", "at:1.1", "dur:quarter", "vel:80", "ch:1"]
+    },
+    {
+      "name": "complex drawio domain example",
+      "input": "add svc AuthService theme:blue near:Gateway dir:right size:140x60",
+      "expected": ["add", "svc", "AuthService", "theme:blue", "near:Gateway", "dir:right", "size:140x60"]
+    },
+    {
+      "name": "chord with slash notation",
+      "input": "chord Piano Dm/F at:2.1 dur:half",
+      "expected": ["chord", "Piano", "Dm/F", "at:2.1", "dur:half"]
+    },
+    {
+      "name": "selector with negation prefix",
+      "input": "remove @not:track:Drums @range:1.1-4.4",
+      "expected": ["remove", "@not:track:Drums", "@range:1.1-4.4"]
+    },
+    {
+      "name": "session new with quoted title and params",
+      "input": "new \"My Song\" tempo:120 time-sig:3/4",
+      "expected": ["new", "My Song", "tempo:120", "time-sig:3/4"]
+    },
+    {
+      "name": "very long token",
+      "input": "add svc AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "expected": ["add", "svc", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
+    },
+    {
+      "name": "hyphenated verb",
+      "input": "time-sig 3/4 at:1.1",
+      "expected": ["time-sig", "3/4", "at:1.1"]
+    },
+    {
+      "name": "key:value with complex value containing dots",
+      "input": "note Piano C4 at:1.1.240",
+      "expected": ["note", "Piano", "C4", "at:1.1.240"]
+    },
+    {
+      "name": "IaC domain example",
+      "input": "add resource aws_s3_bucket my_assets acl:private versioning:true",
+      "expected": ["add", "resource", "aws_s3_bucket", "my_assets", "acl:private", "versioning:true"]
+    },
+    {
+      "name": "multiple quoted strings",
+      "input": "label \"Source Node\" -> \"Target Node\" \"edge label\"",
+      "expected": ["label", "Source Node", "->", "Target Node", "edge label"]
+    },
+    {
+      "name": "token with equals sign (not key:value)",
+      "input": "add svc Foo bar=baz",
+      "expected": ["add", "svc", "Foo", "bar=baz"]
+    },
+    {
+      "name": "numeric tokens",
+      "input": "tempo 120",
+      "expected": ["tempo", "120"]
+    },
+    {
+      "name": "negative numeric token",
+      "input": "transpose @track:Piano -12",
+      "expected": ["transpose", "@track:Piano", "-12"]
+    },
+    {
+      "name": "plus-prefixed numeric token",
+      "input": "velocity @track:Piano +10",
+      "expected": ["velocity", "@track:Piano", "+10"]
+    }
+  ]
+}

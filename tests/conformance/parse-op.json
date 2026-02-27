@@ -1,0 +1,566 @@
+{
+  "description": "FCP parseOp conformance tests. The parser takes an op string and produces a structured ParsedOp with: verb (lowercased), positionals (non-keyword positional args), params (key:value map), selectors (@ prefixed tokens), and raw (original input preserved). Domain-specific verb routing is implementation-defined, but the core tokenization, classification, and extraction behavior is universal.",
+  "version": "1.0",
+  "notes": {
+    "params_representation": "Params are shown as a JSON object. Implementations may use Map, dict, HashMap, etc. The important thing is key-value semantics with string keys and string values.",
+    "selectors_representation": "Selectors are shown as string arrays of the raw @-prefixed tokens. Implementations may parse these further into structured Selector objects.",
+    "verb_case": "The verb MUST be lowercased regardless of input casing.",
+    "raw_preservation": "The raw field preserves the original input string after trimming leading/trailing whitespace."
+  },
+  "tests": [
+    {
+      "name": "verb only, no positionals",
+      "input": "tempo",
+      "expected": {
+        "verb": "tempo",
+        "positionals": [],
+        "params": {},
+        "selectors": [],
+        "raw": "tempo"
+      }
+    },
+    {
+      "name": "verb with single positional",
+      "input": "tempo 120",
+      "expected": {
+        "verb": "tempo",
+        "positionals": ["120"],
+        "params": {},
+        "selectors": [],
+        "raw": "tempo 120"
+      }
+    },
+    {
+      "name": "verb with multiple positionals",
+      "input": "add svc Auth",
+      "expected": {
+        "verb": "add",
+        "positionals": ["svc", "Auth"],
+        "params": {},
+        "selectors": [],
+        "raw": "add svc Auth"
+      }
+    },
+    {
+      "name": "key:value extraction into params",
+      "input": "note Piano C4 at:1.1 dur:quarter",
+      "expected": {
+        "verb": "note",
+        "positionals": ["Piano", "C4"],
+        "params": {
+          "at": "1.1",
+          "dur": "quarter"
+        },
+        "selectors": [],
+        "raw": "note Piano C4 at:1.1 dur:quarter"
+      }
+    },
+    {
+      "name": "multiple key:value params",
+      "input": "note Piano C4 at:1.1 dur:quarter vel:80 ch:1",
+      "expected": {
+        "verb": "note",
+        "positionals": ["Piano", "C4"],
+        "params": {
+          "at": "1.1",
+          "dur": "quarter",
+          "vel": "80",
+          "ch": "1"
+        },
+        "selectors": [],
+        "raw": "note Piano C4 at:1.1 dur:quarter vel:80 ch:1"
+      }
+    },
+    {
+      "name": "selector extraction",
+      "input": "remove @type:db",
+      "expected": {
+        "verb": "remove",
+        "positionals": [],
+        "params": {},
+        "selectors": ["@type:db"],
+        "raw": "remove @type:db"
+      }
+    },
+    {
+      "name": "multiple selectors",
+      "input": "remove @track:Piano @range:1.1-4.4",
+      "expected": {
+        "verb": "remove",
+        "positionals": [],
+        "params": {},
+        "selectors": ["@track:Piano", "@range:1.1-4.4"],
+        "raw": "remove @track:Piano @range:1.1-4.4"
+      }
+    },
+    {
+      "name": "selectors mixed with params",
+      "input": "velocity @track:Piano @range:1.1-4.4 +10",
+      "expected": {
+        "verb": "velocity",
+        "positionals": ["+10"],
+        "params": {},
+        "selectors": ["@track:Piano", "@range:1.1-4.4"],
+        "raw": "velocity @track:Piano @range:1.1-4.4 +10"
+      }
+    },
+    {
+      "name": "all token types mixed together",
+      "input": "style Auth fill:#ff0000 bold @type:svc",
+      "expected": {
+        "verb": "style",
+        "positionals": ["Auth", "bold"],
+        "params": {
+          "fill": "#ff0000"
+        },
+        "selectors": ["@type:svc"],
+        "raw": "style Auth fill:#ff0000 bold @type:svc"
+      }
+    },
+    {
+      "name": "arrows in positionals",
+      "input": "connect A -> B",
+      "expected": {
+        "verb": "connect",
+        "positionals": ["A", "->", "B"],
+        "params": {},
+        "selectors": [],
+        "raw": "connect A -> B"
+      }
+    },
+    {
+      "name": "arrows with params",
+      "input": "connect A -> B label:queries style:dashed",
+      "expected": {
+        "verb": "connect",
+        "positionals": ["A", "->", "B"],
+        "params": {
+          "label": "queries",
+          "style": "dashed"
+        },
+        "selectors": [],
+        "raw": "connect A -> B label:queries style:dashed"
+      }
+    },
+    {
+      "name": "bidirectional arrow in positionals",
+      "input": "connect Client <-> Server",
+      "expected": {
+        "verb": "connect",
+        "positionals": ["Client", "<->", "Server"],
+        "params": {},
+        "selectors": [],
+        "raw": "connect Client <-> Server"
+      }
+    },
+    {
+      "name": "undirected connector in positionals",
+      "input": "connect A -- B",
+      "expected": {
+        "verb": "connect",
+        "positionals": ["A", "--", "B"],
+        "params": {},
+        "selectors": [],
+        "raw": "connect A -- B"
+      }
+    },
+    {
+      "name": "chained arrows",
+      "input": "connect A -> B -> C -> D",
+      "expected": {
+        "verb": "connect",
+        "positionals": ["A", "->", "B", "->", "C", "->", "D"],
+        "params": {},
+        "selectors": [],
+        "raw": "connect A -> B -> C -> D"
+      }
+    },
+    {
+      "name": "verb is lowercased",
+      "input": "ADD svc Auth",
+      "expected": {
+        "verb": "add",
+        "positionals": ["svc", "Auth"],
+        "params": {},
+        "selectors": [],
+        "raw": "ADD svc Auth"
+      }
+    },
+    {
+      "name": "raw preserves original input (after trim)",
+      "input": "  add svc Auth  ",
+      "expected": {
+        "verb": "add",
+        "positionals": ["svc", "Auth"],
+        "params": {},
+        "selectors": [],
+        "raw": "add svc Auth"
+      }
+    },
+    {
+      "name": "quoted string as positional",
+      "input": "title \"My Song\"",
+      "expected": {
+        "verb": "title",
+        "positionals": ["My Song"],
+        "params": {},
+        "selectors": [],
+        "raw": "title \"My Song\""
+      }
+    },
+    {
+      "name": "quoted value in key:value param",
+      "input": "connect A -> B label:\"data flow\"",
+      "expected": {
+        "verb": "connect",
+        "positionals": ["A", "->", "B"],
+        "params": {
+          "label": "data flow"
+        },
+        "selectors": [],
+        "raw": "connect A -> B label:\"data flow\""
+      }
+    },
+    {
+      "name": "key:value with hex color value (colon after #)",
+      "input": "style Auth fill:#dae8fc stroke:#6c8ebf",
+      "expected": {
+        "verb": "style",
+        "positionals": ["Auth"],
+        "params": {
+          "fill": "#dae8fc",
+          "stroke": "#6c8ebf"
+        },
+        "selectors": [],
+        "raw": "style Auth fill:#dae8fc stroke:#6c8ebf"
+      }
+    },
+    {
+      "name": "param value with multiple colons (URL-like)",
+      "description": "Only the first colon splits key from value. Subsequent colons are part of the value.",
+      "input": "add link Docs url:https://example.com:8080/path",
+      "expected": {
+        "verb": "add",
+        "positionals": ["link", "Docs"],
+        "params": {
+          "url": "https://example.com:8080/path"
+        },
+        "selectors": [],
+        "raw": "add link Docs url:https://example.com:8080/path"
+      }
+    },
+    {
+      "name": "negated selector @not:type:value",
+      "input": "remove @not:track:Drums",
+      "expected": {
+        "verb": "remove",
+        "positionals": [],
+        "params": {},
+        "selectors": ["@not:track:Drums"],
+        "raw": "remove @not:track:Drums"
+      }
+    },
+    {
+      "name": "selector with no value (@all)",
+      "input": "layout @all algo:force",
+      "expected": {
+        "verb": "layout",
+        "positionals": [],
+        "params": {
+          "algo": "force"
+        },
+        "selectors": ["@all"],
+        "raw": "layout @all algo:force"
+      }
+    },
+    {
+      "name": "selector @recent with no value",
+      "input": "style @recent fill:red",
+      "expected": {
+        "verb": "style",
+        "positionals": [],
+        "params": {
+          "fill": "red"
+        },
+        "selectors": ["@recent"],
+        "raw": "style @recent fill:red"
+      }
+    },
+    {
+      "name": "selector @recent:N with numeric value",
+      "input": "remove @recent:3",
+      "expected": {
+        "verb": "remove",
+        "positionals": [],
+        "params": {},
+        "selectors": ["@recent:3"],
+        "raw": "remove @recent:3"
+      }
+    },
+    {
+      "name": "real MIDI: note with all params",
+      "input": "note Piano C4 at:1.1 dur:quarter vel:80",
+      "expected": {
+        "verb": "note",
+        "positionals": ["Piano", "C4"],
+        "params": {
+          "at": "1.1",
+          "dur": "quarter",
+          "vel": "80"
+        },
+        "selectors": [],
+        "raw": "note Piano C4 at:1.1 dur:quarter vel:80"
+      }
+    },
+    {
+      "name": "real MIDI: chord command",
+      "input": "chord Piano Cmaj7 at:1.1 dur:half vel:mf",
+      "expected": {
+        "verb": "chord",
+        "positionals": ["Piano", "Cmaj7"],
+        "params": {
+          "at": "1.1",
+          "dur": "half",
+          "vel": "mf"
+        },
+        "selectors": [],
+        "raw": "chord Piano Cmaj7 at:1.1 dur:half vel:mf"
+      }
+    },
+    {
+      "name": "real MIDI: cc command",
+      "input": "cc Piano volume 100 at:1.1",
+      "expected": {
+        "verb": "cc",
+        "positionals": ["Piano", "volume", "100"],
+        "params": {
+          "at": "1.1"
+        },
+        "selectors": [],
+        "raw": "cc Piano volume 100 at:1.1"
+      }
+    },
+    {
+      "name": "real MIDI: track add command",
+      "input": "track add Strings instrument:violin ch:2",
+      "expected": {
+        "verb": "track",
+        "positionals": ["add", "Strings"],
+        "params": {
+          "instrument": "violin",
+          "ch": "2"
+        },
+        "selectors": [],
+        "raw": "track add Strings instrument:violin ch:2"
+      }
+    },
+    {
+      "name": "real MIDI: transpose with selectors",
+      "input": "transpose @track:Piano @range:1.1-4.4 12",
+      "expected": {
+        "verb": "transpose",
+        "positionals": ["12"],
+        "params": {},
+        "selectors": ["@track:Piano", "@range:1.1-4.4"],
+        "raw": "transpose @track:Piano @range:1.1-4.4 12"
+      }
+    },
+    {
+      "name": "real drawio: add with type, label, and positioning",
+      "input": "add svc AuthService theme:blue near:Gateway dir:right",
+      "expected": {
+        "verb": "add",
+        "positionals": ["svc", "AuthService"],
+        "params": {
+          "theme": "blue",
+          "near": "Gateway",
+          "dir": "right"
+        },
+        "selectors": [],
+        "raw": "add svc AuthService theme:blue near:Gateway dir:right"
+      }
+    },
+    {
+      "name": "real drawio: style with selector target",
+      "input": "style @type:db fill:#d5e8d4 stroke:#82b366",
+      "expected": {
+        "verb": "style",
+        "positionals": [],
+        "params": {
+          "fill": "#d5e8d4",
+          "stroke": "#82b366"
+        },
+        "selectors": ["@type:db"],
+        "raw": "style @type:db fill:#d5e8d4 stroke:#82b366"
+      }
+    },
+    {
+      "name": "real drawio: group with as: param",
+      "input": "group AuthService UserDB as:Backend",
+      "expected": {
+        "verb": "group",
+        "positionals": ["AuthService", "UserDB"],
+        "params": {
+          "as": "Backend"
+        },
+        "selectors": [],
+        "raw": "group AuthService UserDB as:Backend"
+      }
+    },
+    {
+      "name": "real drawio: page subcommand",
+      "input": "page add \"Deployment View\"",
+      "expected": {
+        "verb": "page",
+        "positionals": ["add", "Deployment View"],
+        "params": {},
+        "selectors": [],
+        "raw": "page add \"Deployment View\""
+      }
+    },
+    {
+      "name": "hypothetical IaC domain",
+      "input": "add resource aws_s3_bucket my_assets acl:private versioning:true",
+      "expected": {
+        "verb": "add",
+        "positionals": ["resource", "aws_s3_bucket", "my_assets"],
+        "params": {
+          "acl": "private",
+          "versioning": "true"
+        },
+        "selectors": [],
+        "raw": "add resource aws_s3_bucket my_assets acl:private versioning:true"
+      }
+    },
+    {
+      "name": "hyphenated verb",
+      "input": "time-sig 3/4 at:1.1",
+      "expected": {
+        "verb": "time-sig",
+        "positionals": ["3/4"],
+        "params": {
+          "at": "1.1"
+        },
+        "selectors": [],
+        "raw": "time-sig 3/4 at:1.1"
+      }
+    },
+    {
+      "name": "key-sig with mode",
+      "input": "key-sig Bb-minor at:5.1",
+      "expected": {
+        "verb": "key-sig",
+        "positionals": ["Bb-minor"],
+        "params": {
+          "at": "5.1"
+        },
+        "selectors": [],
+        "raw": "key-sig Bb-minor at:5.1"
+      }
+    },
+    {
+      "name": "marker with quoted text",
+      "input": "marker \"Verse 1\" at:1.1",
+      "expected": {
+        "verb": "marker",
+        "positionals": ["Verse 1"],
+        "params": {
+          "at": "1.1"
+        },
+        "selectors": [],
+        "raw": "marker \"Verse 1\" at:1.1"
+      }
+    },
+    {
+      "name": "define with base and params",
+      "input": "define payment-svc base:svc theme:purple badge:PCI",
+      "expected": {
+        "verb": "define",
+        "positionals": ["payment-svc"],
+        "params": {
+          "base": "svc",
+          "theme": "purple",
+          "badge": "PCI"
+        },
+        "selectors": [],
+        "raw": "define payment-svc base:svc theme:purple badge:PCI"
+      }
+    },
+    {
+      "name": "layout with selector and params",
+      "input": "layout @all algo:layered dir:TB spacing:50",
+      "expected": {
+        "verb": "layout",
+        "positionals": [],
+        "params": {
+          "algo": "layered",
+          "dir": "TB",
+          "spacing": "50"
+        },
+        "selectors": ["@all"],
+        "raw": "layout @all algo:layered dir:TB spacing:50"
+      }
+    },
+    {
+      "name": "crescendo with selectors and params",
+      "input": "crescendo @track:Strings @range:1.1-4.4 from:40 to:100",
+      "expected": {
+        "verb": "crescendo",
+        "positionals": [],
+        "params": {
+          "from": "40",
+          "to": "100"
+        },
+        "selectors": ["@track:Strings", "@range:1.1-4.4"],
+        "raw": "crescendo @track:Strings @range:1.1-4.4 from:40 to:100"
+      }
+    },
+    {
+      "name": "repeat with count param",
+      "input": "repeat @track:Piano @range:1.1-2.4 count:4 to:5.1",
+      "expected": {
+        "verb": "repeat",
+        "positionals": [],
+        "params": {
+          "count": "4",
+          "to": "5.1"
+        },
+        "selectors": ["@track:Piano", "@range:1.1-2.4"],
+        "raw": "repeat @track:Piano @range:1.1-2.4 count:4 to:5.1"
+      }
+    },
+    {
+      "name": "quantize with grid param",
+      "input": "quantize @track:Piano grid:eighth",
+      "expected": {
+        "verb": "quantize",
+        "positionals": [],
+        "params": {
+          "grid": "eighth"
+        },
+        "selectors": ["@track:Piano"],
+        "raw": "quantize @track:Piano grid:eighth"
+      }
+    }
+  ],
+  "error_tests": [
+    {
+      "name": "empty input",
+      "input": "",
+      "expected_error": true,
+      "description": "Empty string must produce an error, not a valid ParsedOp."
+    },
+    {
+      "name": "whitespace-only input",
+      "input": "   ",
+      "expected_error": true,
+      "description": "Whitespace-only string must produce an error after trimming."
+    },
+    {
+      "name": "tab-only input",
+      "input": "\t\t",
+      "expected_error": true,
+      "description": "Tab-only string must produce an error after trimming."
+    }
+  ]
+}
