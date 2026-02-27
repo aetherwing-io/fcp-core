@@ -67,7 +67,7 @@ An FCP server is a valid MCP server. Any MCP client can connect to it without kn
 ### Creating entities
 
 ```
-# drawio-studio: add a service node
+# fcp-drawio: add a service node
 add svc AuthService theme:blue near:Gateway dir:right
 
 # fcp-midi: add a note
@@ -77,7 +77,7 @@ note Piano C4 at:1.1 dur:quarter vel:mf
 ### Querying state
 
 ```
-# drawio-studio
+# fcp-drawio
 studio_query("map")           # spatial overview
 studio_query("describe Auth") # shape details
 
@@ -89,7 +89,7 @@ midi_query("describe Piano")  # track details
 ### Session lifecycle
 
 ```
-# drawio-studio
+# fcp-drawio
 studio_session('new "Architecture" type:architecture')
 studio_session('save as:./arch.drawio')
 studio_session('checkpoint v1')
@@ -124,5 +124,5 @@ midi_help()
 
 | Server | Domain | Language | Repository |
 |--------|--------|----------|------------|
-| drawio-studio | Diagrams (draw.io XML) | TypeScript | drawio-studio-mcp |
+| fcp-drawio | Diagrams (draw.io XML) | TypeScript | fcp-drawio |
 | fcp-midi | Music (MIDI binary) | Python | fcp-midi |

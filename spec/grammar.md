@@ -165,7 +165,7 @@ fcp-core produces a structurally classified `ParsedOp`. The domain layer assigns
 
 ### Example: Same grammar, different semantics
 
-**drawio-studio:**
+**fcp-drawio:**
 ```
 Input:  add svc AuthService theme:blue
 Parsed: {
@@ -195,7 +195,7 @@ Both produce the same `ParsedOp` shape. The domain's verb handler decides what `
 
 ### Example: Selectors across domains
 
-**drawio-studio:**
+**fcp-drawio:**
 ```
 Input:  style @type:db fill:#ff0000
 Parsed: {

@@ -40,13 +40,13 @@ new "Title" [key:value params...]
 
 | Domain | Parameters | Example |
 |--------|-----------|---------|
-| drawio-studio | `type:architecture` | `new "System Design" type:architecture` |
+| fcp-drawio | `type:architecture` | `new "System Design" type:architecture` |
 | fcp-midi | `tempo:N`, `time-sig:N/D`, `key:K`, `ppqn:N` | `new "My Song" tempo:140 time-sig:3/4` |
 
 **Response:** Confirmation with the created document's properties.
 
 ```
-# drawio-studio
+# fcp-drawio
 new diagram "System Design" created
 
 # fcp-midi
@@ -71,7 +71,7 @@ open PATH
 **Response:** Confirmation with loaded document summary.
 
 ```
-# drawio-studio
+# fcp-drawio
 ok: opened "./arch.drawio" (2 pages, 5 shapes, 3 edges, 1 groups)
 
 # fcp-midi
@@ -97,7 +97,7 @@ save as:PATH
 **Response:** Confirmation with the saved path.
 
 ```
-# drawio-studio
+# fcp-drawio
 ok: saved ./arch.drawio (5 shapes, 3 edges, 1 groups)
 
 # fcp-midi
@@ -170,7 +170,7 @@ Domains MAY extend the session with additional commands. These follow the same t
 
 | Domain | Command | Purpose |
 |--------|---------|---------|
-| drawio-studio | `export png path:./out.png` | Export to image format |
+| fcp-drawio | `export png path:./out.png` | Export to image format |
 | fcp-midi | `load-soundfont PATH` | Load custom instrument bank |
 
 ## Domain Hooks
@@ -181,7 +181,7 @@ The session lifecycle provides hooks that domains implement to customize behavio
 
 Called when creating a new document. The domain constructs its model type with the appropriate defaults.
 
-**drawio-studio:** Creates a `Diagram` with a default page, layer, and empty shape/edge maps.
+**fcp-drawio:** Creates a `Diagram` with a default page, layer, and empty shape/edge maps.
 
 **fcp-midi:** Creates a `Song` with tempo, time signature, key signature, and PPQN from params.
 
@@ -189,7 +189,7 @@ Called when creating a new document. The domain constructs its model type with t
 
 Called when loading a file. The domain deserializes the file format into its model type.
 
-**drawio-studio:** Parses draw.io XML into a `Diagram` with pages, shapes, edges, and groups.
+**fcp-drawio:** Parses draw.io XML into a `Diagram` with pages, shapes, edges, and groups.
 
 **fcp-midi:** Parses MIDI binary into a `Song` with tracks, notes, and tempo map.
 
@@ -197,7 +197,7 @@ Called when loading a file. The domain deserializes the file format into its mod
 
 Called when saving. The domain serializes its model to the file format.
 
-**drawio-studio:** Generates draw.io XML from the `Diagram` model.
+**fcp-drawio:** Generates draw.io XML from the `Diagram` model.
 
 **fcp-midi:** Generates MIDI binary from the `Song` model.
 
@@ -205,7 +205,7 @@ Called when saving. The domain serializes its model to the file format.
 
 Called after undo, redo, or open. The domain rebuilds any derived lookup structures.
 
-**drawio-studio:** Rebuilds the `ReferenceRegistry` (label-to-ID mapping for O(1) ref resolution).
+**fcp-drawio:** Rebuilds the `ReferenceRegistry` (label-to-ID mapping for O(1) ref resolution).
 
 **fcp-midi:** Rebuilds the `Registry` (track-name-to-ID mapping, note lookups).
 

@@ -164,9 +164,9 @@ Domain-specific examples:
 
 | Domain | Selector | Description |
 |--------|----------|-------------|
-| drawio-studio | `@type:db` | Shapes of type "db" |
-| drawio-studio | `@group:Backend` | Shapes in group "Backend" |
-| drawio-studio | `@connected:Auth` | Shapes connected to "Auth" |
+| fcp-drawio | `@type:db` | Shapes of type "db" |
+| fcp-drawio | `@group:Backend` | Shapes in group "Backend" |
+| fcp-drawio | `@connected:Auth` | Shapes connected to "Auth" |
 | fcp-midi | `@track:Piano` | Notes on track "Piano" |
 | fcp-midi | `@range:1.1-4.4` | Notes in position range |
 | fcp-midi | `@pitch:C4` | Notes matching pitch |

@@ -111,7 +111,7 @@ Return the last `count` non-checkpoint events up to the cursor, in chronological
 
 Events are domain-specific discriminated unions. Each event has a `type` string field that identifies it.
 
-### drawio-studio events
+### fcp-drawio events
 
 ```
 shape_created    { shape }
@@ -191,7 +191,7 @@ def reverse_event(ev, song):
     ...
 ```
 
-### Example: drawio-studio reversal
+### Example: fcp-drawio reversal
 
 ```typescript
 function reverseEvent(event: DiagramEvent, model: DiagramModel): void {
@@ -259,7 +259,7 @@ After mutations, the server SHOULD compute a state digest -- a compact fingerpri
 Digest format is domain-specific:
 
 ```
-# drawio-studio
+# fcp-drawio
 digest: 5s 3e 1g                    # shapes, edges, groups
 
 # fcp-midi

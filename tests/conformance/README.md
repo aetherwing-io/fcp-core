@@ -2,7 +2,7 @@
 
 Language-agnostic JSON test fixtures that define the behavioral specification for any FCP (File Context Protocol) implementation. These tests are derived from two reference implementations:
 
-- **drawio-studio** (TypeScript) -- diagram editing MCP server
+- **fcp-drawio** (TypeScript) -- diagram editing MCP server
 - **fcp-midi** (Python) -- MIDI composition MCP server
 
 Any valid FCP implementation (TypeScript, Python, Go, Rust, etc.) must pass these tests.
@@ -116,4 +116,4 @@ Assertions check:
 2. **JSON-only** -- No test framework code; fixtures are pure data consumable by any language
 3. **Thorough edge cases** -- Empty inputs, unicode, special characters, boundary conditions
 4. **Both happy and error paths** -- Every fixture includes error_tests where applicable
-5. **Derived from real implementations** -- Behavior is verified against drawio-studio and fcp-midi codebases
+5. **Derived from real implementations** -- Behavior is verified against fcp-drawio and fcp-midi codebases

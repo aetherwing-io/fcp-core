@@ -22,7 +22,7 @@ Every FCP server exposes exactly four MCP tools. The tool names follow the patte
 
 **Response format:** One line per operation result, using response prefix conventions (see below). The final line SHOULD be a state digest for drift detection.
 
-### Example: drawio-studio
+### Example: fcp-drawio
 
 ```
 studio([
@@ -76,11 +76,11 @@ hash:abc123 tracks:1 notes:3
 
 | Domain | Query | Description |
 |--------|-------|-------------|
-| drawio-studio | `list` | List all shapes |
-| drawio-studio | `list @type:db` | List shapes matching selector |
-| drawio-studio | `connections REF` | Show incoming/outgoing edges |
-| drawio-studio | `find TEXT` | Search shapes by label |
-| drawio-studio | `diff checkpoint:NAME` | Show changes since checkpoint |
+| fcp-drawio | `list` | List all shapes |
+| fcp-drawio | `list @type:db` | List shapes matching selector |
+| fcp-drawio | `connections REF` | Show incoming/outgoing edges |
+| fcp-drawio | `find TEXT` | Search shapes by label |
+| fcp-drawio | `diff checkpoint:NAME` | Show changes since checkpoint |
 | fcp-midi | `tracks` | List all tracks |
 | fcp-midi | `events TRACK [M.B-M.B]` | Show events on a track |
 | fcp-midi | `piano-roll TRACK M.B-M.B` | ASCII visualization |
@@ -184,7 +184,7 @@ Errors include a `!` prefix and optionally a suggestion line:
 The mutation tool SHOULD append a state digest as the final line of every response. The digest is a compact summary that lets the LLM detect drift between its mental model and the actual state.
 
 ```
-# drawio-studio
+# fcp-drawio
 digest: 5s 3e 1g
 
 # fcp-midi
