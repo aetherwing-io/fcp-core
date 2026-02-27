@@ -1,6 +1,6 @@
 {
   "name": "@aetherwing/fcp-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "File Context Protocol — reusable framework for building MCP servers",
   "type": "module",
   "main": "dist/index.js",
