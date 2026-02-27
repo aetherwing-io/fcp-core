@@ -46,7 +46,7 @@ Every FCP server exposes exactly four MCP tools:
 | `{domain}_session` | `(action: string)` | Lifecycle management (new, open, save, undo, redo) |
 | `{domain}_help` | `()` | Self-documenting reference card |
 
-Where `{domain}` is a short identifier like `midi` or `studio`.
+Where `{domain}` is a short identifier like `midi` or `drawio`.
 
 **Why exactly four?** MCP tool descriptions are loaded into the LLM's context on connect. Each tool consumes context tokens. Four tools provide a clean separation of concerns (mutate / query / lifecycle / help) without fragmenting the interface into dozens of endpoints that bloat the context window. The mutation tool handles all write operations through a single `ops: string[]` parameter; the grammar handles dispatch internally.
 
@@ -78,8 +78,8 @@ note Piano C4 at:1.1 dur:quarter vel:mf
 
 ```
 # fcp-drawio
-studio_query("map")           # spatial overview
-studio_query("describe Auth") # shape details
+drawio_query("map")           # spatial overview
+drawio_query("describe Auth") # shape details
 
 # fcp-midi
 midi_query("map")             # song overview
@@ -90,10 +90,10 @@ midi_query("describe Piano")  # track details
 
 ```
 # fcp-drawio
-studio_session('new "Architecture" type:architecture')
-studio_session('save as:./arch.drawio')
-studio_session('checkpoint v1')
-studio_session('undo to:v1')
+drawio_session('new "Architecture" type:architecture')
+drawio_session('save as:./arch.drawio')
+drawio_session('checkpoint v1')
+drawio_session('undo to:v1')
 
 # fcp-midi
 midi_session('new "My Song" tempo:120')
@@ -106,7 +106,7 @@ midi_session('undo to:v1')
 
 ```
 # Both return a reference card with full syntax
-studio_help()
+drawio_help()
 midi_help()
 ```
 

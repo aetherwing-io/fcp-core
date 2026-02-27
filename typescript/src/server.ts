@@ -53,7 +53,7 @@ export interface FcpDomainAdapter<Model, Event> {
  * Configuration for creating an FCP MCP server.
  */
 export interface FcpServerConfig<Model, Event> {
-  /** Domain name (e.g., "midi", "studio"). Used as tool name prefix. */
+  /** Domain name (e.g., "midi", "drawio"). Used as tool name prefix. */
   domain: string;
   /** Domain adapter implementing all domain-specific logic. */
   adapter: FcpDomainAdapter<Model, Event>;

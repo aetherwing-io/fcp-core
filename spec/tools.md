@@ -4,7 +4,7 @@
 
 ## The 4-Tool Architecture
 
-Every FCP server exposes exactly four MCP tools. The tool names follow the pattern `{domain}`, `{domain}_query`, `{domain}_session`, and `{domain}_help`, where `{domain}` is a short identifier (e.g., `studio`, `midi`).
+Every FCP server exposes exactly four MCP tools. The tool names follow the pattern `{domain}`, `{domain}_query`, `{domain}_session`, and `{domain}_help`, where `{domain}` is a short identifier (e.g., `drawio`, `midi`).
 
 ## Tool 1: `{domain}(ops: string[])`
 
@@ -25,7 +25,7 @@ Every FCP server exposes exactly four MCP tools. The tool names follow the patte
 ### Example: fcp-drawio
 
 ```
-studio([
+drawio([
   "add svc AuthService theme:blue",
   "add db UserDB theme:green near:AuthService dir:right",
   "connect AuthService -> UserDB label:queries"
@@ -90,7 +90,7 @@ hash:abc123 tracks:1 notes:3
 ### Example
 
 ```
-studio_query("map")
+drawio_query("map")
 Response:
 map: 800x600 flow:TB | 3s 1e 0g
   AuthService(svc) @(200,200)

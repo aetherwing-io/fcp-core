@@ -21,7 +21,7 @@ The server MUST expose exactly four MCP tools following the naming convention:
 | `{domain}_session` | `(action: string)` returning text |
 | `{domain}_help` | `()` returning text |
 
-Where `{domain}` is a consistent short identifier (e.g., `midi`, `studio`, `slides`).
+Where `{domain}` is a consistent short identifier (e.g., `midi`, `drawio`, `slides`).
 
 ### M2. ParsedOp Grammar
 
