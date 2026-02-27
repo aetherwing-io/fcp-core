@@ -26,7 +26,7 @@ VERB [positionals...] [key:value params...] [@selectors...]
 Creating an FCP server with `createFcpServer`:
 
 ```typescript
-import { createFcpServer } from '@fcp/core';
+import { createFcpServer } from '@aetherwing/fcp-core';
 
 const server = createFcpServer({
   domain: 'midi',
@@ -49,10 +49,10 @@ server = create_fcp_server(
 
 ## Installation
 
-**TypeScript** (Node >= 18):
+**TypeScript** (Node >= 22):
 
 ```bash
-npm install @fcp/core
+npm install @aetherwing/fcp-core
 ```
 
 **Python** (>= 3.11):
@@ -89,7 +89,7 @@ The full specification lives in [`spec/`](spec/):
 # TypeScript
 cd typescript
 npm install
-npm test          # vitest, 104 tests
+npm test          # vitest, 107 tests
 npm run build     # tsc
 
 # Python
