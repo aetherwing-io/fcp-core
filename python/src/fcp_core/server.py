@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import TextContent
 
 from fcp_core.event_log import EventLog
 from fcp_core.formatter import format_result
@@ -185,9 +186,9 @@ def create_fcp_server(
     reference_card = registry.generate_reference_card(extra_sections)
 
     @mcp.tool(name=domain, description=tool_description)
-    def execute_ops(ops: list[str]) -> str:
+    def execute_ops(ops: list[str]) -> TextContent:
         if session.model is None:
-            return format_result(False, "No model loaded. Use session 'new' or 'open' first.")
+            return TextContent(type="text", text=format_result(False, "No model loaded. Use session 'new' or 'open' first."))
         results: list[str] = []
         for op_str in ops:
             parsed = parse_op(op_str)
@@ -196,23 +197,23 @@ def create_fcp_server(
                 continue
             result = adapter.dispatch_op(parsed, session.model, session.event_log)
             results.append(format_result(result.success, result.message, result.prefix))
-        return "\n".join(results)
+        return TextContent(type="text", text="\n".join(results))
 
     @mcp.tool(name=f"{domain}_query")
-    def execute_query(q: str) -> str:
+    def execute_query(q: str) -> TextContent:
         f"""Query {domain} state."""
         if session.model is None:
-            return format_result(False, "No model loaded.")
-        return adapter.dispatch_query(q, session.model)
+            return TextContent(type="text", text=format_result(False, "No model loaded."))
+        return TextContent(type="text", text=adapter.dispatch_query(q, session.model))
 
     @mcp.tool(name=f"{domain}_session")
-    def execute_session(action: str) -> str:
+    def execute_session(action: str) -> TextContent:
         f"""Session: 'new "Title"', 'open ./file', 'save', 'checkpoint v1', 'undo', 'redo'"""
-        return session.dispatch(action)
+        return TextContent(type="text", text=session.dispatch(action))
 
     @mcp.tool(name=f"{domain}_help")
-    def get_help() -> str:
+    def get_help() -> TextContent:
         f"""Returns the {domain} reference card with all syntax."""
-        return reference_card
+        return TextContent(type="text", text=reference_card)
 
     return mcp
