@@ -142,6 +142,12 @@ The query tool SHOULD support:
 | `describe REF` | Detailed information about a specific entity |
 | `history N` | Last N events from the event log |
 
+### S8. Native Library Preference
+
+The `Model` type parameter in `FcpDomainAdapter<Model, Event>` is intentionally generic. When a mature native library exists for the target format, implementors SHOULD use the library's own type as `Model` (e.g., `hclwrite.File`, `mido.MidiFile`). This eliminates adapter code between parallel models and leverages the library's battle-tested serialization.
+
+See [implementation-guide.md](implementation-guide.md) for detailed guidance on the three implementation tiers.
+
 ## MAY Requirements
 
 A conforming FCP server MAY implement the following optional extensions.

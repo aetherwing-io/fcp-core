@@ -119,6 +119,7 @@ midi_help()
 | [session.md](session.md) | Session lifecycle: new, open, save, checkpoint, undo, redo |
 | [events.md](events.md) | Event log: cursor-based undo model, checkpoints, reversal |
 | [conformance.md](conformance.md) | MUST/SHOULD/MAY requirements for valid FCP servers |
+| [implementation-guide.md](implementation-guide.md) | Domain implementation guide: native library tiers, thin index pattern, undo strategy |
 
 ## Proven Implementations
 
