@@ -62,8 +62,10 @@ Verbs are domain-specific. fcp-core does not maintain a verb whitelist; it simpl
 
 A token containing `:` where:
 - It does NOT start with `@` (that's a selector)
+- It does NOT start with `=` (that's a formula / expression)
 - The `:` is not in position 0 (bare `:` is not a key:value)
 - It is not an arrow operator (`->`, `<->`, `--`)
+- It is not a cell range (see below)
 
 The key is everything before the first `:`. The value is everything after.
 
@@ -76,6 +78,19 @@ as:./file.mid   key="as"      value="./file.mid"
 ```
 
 Values may contain colons: `time-sig:3/4` is a valid key:value where key="time-sig", value="3/4".
+
+#### Cell Range Exclusion
+
+Tokens matching spreadsheet cell range patterns are classified as **positionals**, not key:value. This prevents ranges like `A1:F1` from being misinterpreted as `key="A1"`, `value="F1"`.
+
+Recognized cell range patterns:
+- **Cell range**: `A1:F1`, `AA1:BB23` (1-3 letters + digits on both sides of `:`)
+- **Row range**: `1:5`, `3:3` (digits on both sides of `:`)
+- **Cross-sheet**: `Sheet2!A1:B10` (sheet prefix with `!` before cell range)
+
+Tokens starting with `=` (formulas like `=SUM(A1:B2)`) are also classified as positionals.
+
+Note: Pure column ranges (`A:E`, `B:B`) are NOT excluded at the grammar level because they are ambiguous with key:value pairs where both key and value are short words. Domains needing column ranges should handle them at the domain level or use hyphen syntax (`A-E`).
 
 ### 3. Selector
 

@@ -88,6 +88,50 @@ class TestIsKeyValue:
     def test_empty_value(self):
         assert is_key_value("key:") is True
 
+    # Cell range exclusions — ranges must NOT be treated as key:value
+    def test_cell_range_not_key_value(self):
+        assert is_key_value("A1:F1") is False
+
+    def test_cell_range_multichar_col(self):
+        assert is_key_value("AA1:BB23") is False
+
+    def test_row_range_not_key_value(self):
+        assert is_key_value("3:3") is False
+
+    def test_row_range_span(self):
+        assert is_key_value("1:5") is False
+
+    def test_cross_sheet_range_not_key_value(self):
+        assert is_key_value("Sheet2!A1:B10") is False
+
+    def test_formula_not_key_value(self):
+        assert is_key_value("=SUM(D2:D4)") is False
+
+    def test_formula_average_not_key_value(self):
+        assert is_key_value("=AVERAGE(B2:B4)") is False
+
+    def test_formula_simple_not_key_value(self):
+        assert is_key_value("=A1+B1") is False
+
+    # Ensure legitimate key:value still works
+    def test_at_param_still_works(self):
+        assert is_key_value("at:1.1") is True
+
+    def test_dur_param_still_works(self):
+        assert is_key_value("dur:quarter") is True
+
+    def test_theme_param_still_works(self):
+        assert is_key_value("theme:blue") is True
+
+    def test_fmt_param_still_works(self):
+        assert is_key_value("fmt:$#,##0") is True
+
+    def test_vel_mf_still_key_value(self):
+        assert is_key_value("vel:mf") is True
+
+    def test_by_A_still_key_value(self):
+        assert is_key_value("by:A") is True
+
 
 class TestParseKeyValue:
     def test_basic(self):

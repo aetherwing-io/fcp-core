@@ -81,6 +81,64 @@ describe("parseOp", () => {
     expect(result.params).toEqual({});
     expect(result.selectors).toEqual([]);
   });
+
+  // --- Cell range support (spreadsheet domain) ---
+
+  it("treats cell range A1:F1 as positional, not key:value", () => {
+    const result = parseOp("merge A1:F1");
+    if (isParseError(result)) return;
+    expect(result.verb).toBe("merge");
+    expect(result.positionals).toEqual(["A1:F1"]);
+    expect(result.params).toEqual({});
+  });
+
+  it("treats cell range with params correctly", () => {
+    const result = parseOp("merge A1:F1 align:center");
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["A1:F1"]);
+    expect(result.params).toEqual({ align: "center" });
+  });
+
+  it("treats style range as positional", () => {
+    const result = parseOp("style A1:D10 bold");
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["A1:D10", "bold"]);
+    expect(result.params).toEqual({});
+  });
+
+  it("treats formula as positional", () => {
+    const result = parseOp("set A1 =SUM(D2:D4)");
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["A1", "=SUM(D2:D4)"]);
+    expect(result.params).toEqual({});
+  });
+
+  it("treats formula with fmt param correctly", () => {
+    const result = parseOp("set D2 =SUM(A2:C2) fmt:$#,##0");
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["D2", "=SUM(A2:C2)"]);
+    expect(result.params).toEqual({ "fmt": "$#,##0" });
+  });
+
+  it("treats row range as positional", () => {
+    const result = parseOp("height 1:5 25");
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["1:5", "25"]);
+    expect(result.params).toEqual({});
+  });
+
+  it("treats cross-sheet range as positional", () => {
+    const result = parseOp("clear Sheet2!A1:B10");
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["Sheet2!A1:B10"]);
+  });
+
+  it("treats border range with params correctly", () => {
+    const result = parseOp("border A1:F1 outline line:thin color:#000000");
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["A1:F1", "outline"]);
+    expect(result.params).toEqual({ line: "thin", color: "#000000" });
+  });
 });
 
 describe("isParseError", () => {

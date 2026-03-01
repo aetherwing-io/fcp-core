@@ -2,6 +2,7 @@
 export {
   tokenize,
   isKeyValue,
+  isCellRange,
   parseKeyValue,
   parseKeyValueWithMeta,
   isArrow,

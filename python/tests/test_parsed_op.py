@@ -99,3 +99,65 @@ class TestParseOp:
         assert isinstance(result, ParsedOp)
         # Positionals are just strings, not interpreted as track/pitch
         assert result.positionals == ["Piano", "C4"]
+
+    # --- Cell range support (spreadsheet domain) ---
+
+    def test_merge_range_is_positional(self):
+        """Cell ranges like A1:F1 must be positional, not key:value."""
+        result = parse_op("merge A1:F1")
+        assert isinstance(result, ParsedOp)
+        assert result.verb == "merge"
+        assert result.positionals == ["A1:F1"]
+        assert result.params == {}
+
+    def test_style_range_is_positional(self):
+        result = parse_op("style A1:D10 bold")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A1:D10", "bold"]
+        assert result.params == {}
+
+    def test_merge_range_with_param(self):
+        result = parse_op("merge A1:F1 align:center")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A1:F1"]
+        assert result.params == {"align": "center"}
+
+    def test_formula_is_positional(self):
+        """Formulas like =SUM(D2:D4) must be positional, not key:value."""
+        result = parse_op("set A1 =SUM(D2:D4)")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A1", "=SUM(D2:D4)"]
+        assert result.params == {}
+
+    def test_formula_average_is_positional(self):
+        result = parse_op("set B1 =AVERAGE(B2:B4)")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["B1", "=AVERAGE(B2:B4)"]
+
+    def test_row_range_is_positional(self):
+        result = parse_op("height 1:5 25")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["1:5", "25"]
+        assert result.params == {}
+
+    def test_cross_sheet_range_is_positional(self):
+        result = parse_op("clear Sheet2!A1:B10")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["Sheet2!A1:B10"]
+
+    def test_border_range_with_params(self):
+        result = parse_op("border A1:F1 outline line:thin color:#000000")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A1:F1", "outline"]
+        assert result.params == {"line": "thin", "color": "#000000"}
+
+    def test_filter_range(self):
+        result = parse_op("filter A1:F10")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A1:F10"]
+
+    def test_formula_with_fmt_param(self):
+        result = parse_op("set D2 =SUM(A2:C2) fmt:$#,##0")
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["D2", "=SUM(A2:C2)"]
+        assert result.params == {"fmt": "$#,##0"}

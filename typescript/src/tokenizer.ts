@@ -76,12 +76,64 @@ export function tokenize(input: string): string[] {
 }
 
 /**
+ * Regex patterns for cell range detection (spreadsheet A1 notation).
+ * Cell ref: 1-3 letters followed by digits (A1, BB23, XFD1048576)
+ * Row ref: digits only (1, 23)
+ *
+ * Note: Pure column ranges (A:E, B:B) are intentionally NOT detected here
+ * because they are ambiguous with key:value pairs like "theme:blue" or
+ * "vel:mf". Column-only ranges should use hyphen syntax (A-E) or be
+ * handled at the domain level.
+ */
+const CELL_REF_RE = /^[A-Za-z]{1,3}\d+$/;
+const ROW_REF_RE = /^[0-9]+$/;
+
+/**
+ * Check if a token looks like a spreadsheet cell range.
+ *
+ * Recognized patterns (with optional Sheet! prefix):
+ *   A1:F1     — cell range (letters+digits : letters+digits)
+ *   3:3       — row range (digits : digits)
+ *   1:5       — row range
+ *   Sheet2!A1:B10 — cross-sheet cell range
+ *
+ * NOT recognized (ambiguous with key:value):
+ *   A:E       — column range (use A-E instead, or handle at domain level)
+ */
+export function isCellRange(token: string): boolean {
+  let ref = token;
+  // Strip optional sheet prefix (Sheet2!A1:B10 → A1:B10)
+  const bangIdx = ref.indexOf("!");
+  if (bangIdx >= 0) {
+    ref = ref.slice(bangIdx + 1);
+  }
+
+  const colonIdx = ref.indexOf(":");
+  if (colonIdx <= 0 || colonIdx >= ref.length - 1) return false;
+
+  const left = ref.slice(0, colonIdx);
+  const right = ref.slice(colonIdx + 1);
+
+  // Cell range: A1:F1 (most common spreadsheet range pattern)
+  if (CELL_REF_RE.test(left) && CELL_REF_RE.test(right)) return true;
+  // Row range: 1:5 or 3:3 (no FCP key is ever a pure number)
+  if (ROW_REF_RE.test(left) && ROW_REF_RE.test(right)) return true;
+
+  return false;
+}
+
+/**
  * Check if a token is a key:value pair.
- * Must contain ":" but not start with "@" (selectors) and not be an arrow.
+ * Must contain ":" but not start with "@" (selectors), not be an arrow,
+ * not be a formula (starts with "="), and not be a cell range (e.g. A1:F1).
  */
 export function isKeyValue(token: string): boolean {
   if (token.startsWith("@")) return false;
   if (isArrow(token)) return false;
+  // Formulas (=SUM(A1:B2)) are values, not key:value pairs
+  if (token.startsWith("=")) return false;
+  // Spreadsheet cell ranges (A1:F1, B:B, 3:3) are positional args
+  if (isCellRange(token)) return false;
   const colonIdx = token.indexOf(":");
   return colonIdx > 0 && colonIdx < token.length - 1;
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tokenize, isKeyValue, parseKeyValue, parseKeyValueWithMeta, isArrow, isSelector } from "../src/tokenizer.js";
+import { tokenize, isKeyValue, isCellRange, parseKeyValue, parseKeyValueWithMeta, isArrow, isSelector } from "../src/tokenizer.js";
 
 describe("tokenize", () => {
   it("splits simple tokens", () => {
@@ -118,6 +118,109 @@ describe("isKeyValue", () => {
 
   it("returns false for leading colon", () => {
     expect(isKeyValue(":value")).toBe(false);
+  });
+
+  // Cell range exclusions — ranges must NOT be treated as key:value
+  it("returns false for cell range A1:F1", () => {
+    expect(isKeyValue("A1:F1")).toBe(false);
+  });
+
+  it("returns false for cell range AA1:BB23", () => {
+    expect(isKeyValue("AA1:BB23")).toBe(false);
+  });
+
+  it("returns false for row range 3:3", () => {
+    expect(isKeyValue("3:3")).toBe(false);
+  });
+
+  it("returns false for row range 1:5", () => {
+    expect(isKeyValue("1:5")).toBe(false);
+  });
+
+  it("returns false for cross-sheet range Sheet2!A1:B10", () => {
+    expect(isKeyValue("Sheet2!A1:B10")).toBe(false);
+  });
+
+  it("returns false for formulas =SUM(D2:D4)", () => {
+    expect(isKeyValue("=SUM(D2:D4)")).toBe(false);
+  });
+
+  it("returns false for formula =AVERAGE(B2:B4)", () => {
+    expect(isKeyValue("=AVERAGE(B2:B4)")).toBe(false);
+  });
+
+  it("returns false for simple formula =A1+B1", () => {
+    expect(isKeyValue("=A1+B1")).toBe(false);
+  });
+
+  // Ensure legitimate key:value still works
+  it("still recognizes at:1.1 as key:value", () => {
+    expect(isKeyValue("at:1.1")).toBe(true);
+  });
+
+  it("still recognizes dur:quarter as key:value", () => {
+    expect(isKeyValue("dur:quarter")).toBe(true);
+  });
+
+  it("still recognizes theme:blue as key:value", () => {
+    expect(isKeyValue("theme:blue")).toBe(true);
+  });
+
+  it("still recognizes fmt:$#,##0 as key:value", () => {
+    expect(isKeyValue("fmt:$#,##0")).toBe(true);
+  });
+
+  it("still recognizes vel:mf as key:value", () => {
+    expect(isKeyValue("vel:mf")).toBe(true);
+  });
+
+  it("still recognizes by:A as key:value", () => {
+    expect(isKeyValue("by:A")).toBe(true);
+  });
+});
+
+describe("isCellRange", () => {
+  it("recognizes cell ranges like A1:F1", () => {
+    expect(isCellRange("A1:F1")).toBe(true);
+  });
+
+  it("recognizes multi-char column cell ranges like AA1:BB23", () => {
+    expect(isCellRange("AA1:BB23")).toBe(true);
+  });
+
+  it("recognizes row ranges like 3:3", () => {
+    expect(isCellRange("3:3")).toBe(true);
+  });
+
+  it("recognizes row span ranges like 1:5", () => {
+    expect(isCellRange("1:5")).toBe(true);
+  });
+
+  it("recognizes cross-sheet ranges like Sheet2!A1:B10", () => {
+    expect(isCellRange("Sheet2!A1:B10")).toBe(true);
+  });
+
+  it("does not recognize pure column ranges (ambiguous with key:value)", () => {
+    // Column ranges like A:E are ambiguous with key:value (theme:blue, vel:mf)
+    // They should be handled at the domain level or use hyphen syntax (A-E)
+    expect(isCellRange("A:E")).toBe(false);
+    expect(isCellRange("B:B")).toBe(false);
+  });
+
+  it("rejects key:value patterns like theme:blue", () => {
+    expect(isCellRange("theme:blue")).toBe(false);
+  });
+
+  it("rejects key:value with hash like fill:#ff0000", () => {
+    expect(isCellRange("fill:#ff0000")).toBe(false);
+  });
+
+  it("rejects plain words", () => {
+    expect(isCellRange("hello")).toBe(false);
+  });
+
+  it("rejects mixed patterns like at:1.1", () => {
+    expect(isCellRange("at:1.1")).toBe(false);
   });
 });
 
