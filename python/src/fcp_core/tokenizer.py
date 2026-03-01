@@ -24,6 +24,12 @@ class TokenMeta:
 def _consume_quoted(s: str, i: int, quote_char: str) -> tuple[str, int]:
     """Consume characters until the matching *quote_char*, starting after it.
 
+    Handles backslash escape sequences:
+      ``\\"`` → literal ``"``   (escaped quote)
+      ``\\n`` → newline
+      ``\\\\`` → literal ``\\``
+      ``\\x`` → literal ``x``  (any other char after backslash)
+
     Returns ``(content, new_index)`` where *content* excludes the delimiters.
     Raises :class:`ValueError` on unclosed quote.
     """
@@ -32,10 +38,20 @@ def _consume_quoted(s: str, i: int, quote_char: str) -> tuple[str, int]:
     buf: list[str] = []
     while i < n:
         ch = s[i]
-        if ch == quote_char:
+        if ch == "\\" and i + 1 < n:
+            nxt = s[i + 1]
+            if nxt == "n":
+                buf.append("\n")
+                i += 2
+            else:
+                # \" → " , \\ → \ , \x → x
+                buf.append(nxt)
+                i += 2
+        elif ch == quote_char:
             return "".join(buf), i + 1  # skip closing quote
-        buf.append(ch)
-        i += 1
+        else:
+            buf.append(ch)
+            i += 1
     raise ValueError("No closing quotation")
 
 
@@ -86,15 +102,26 @@ def tokenize_with_meta(op_string: str) -> list[TokenMeta]:
                     buf.append(ch)
                     i += 1
                     while i < n and op_string[i] != ch:
-                        buf.append(op_string[i])
-                        i += 1
+                        if op_string[i] == "\\" and i + 1 < n:
+                            nxt = op_string[i + 1]
+                            if nxt == "n":
+                                buf.append("\n")
+                                i += 2
+                            else:
+                                buf.append(nxt)
+                                i += 2
+                        else:
+                            buf.append(op_string[i])
+                            i += 1
                     if i < n:
                         buf.append(op_string[i])  # closing quote
                         i += 1
                 else:
                     buf.append(ch)
                     i += 1
-            tokens.append(TokenMeta(text="".join(buf), was_quoted=False))
+            # Convert literal \n in unquoted tokens to actual newlines
+            text = "".join(buf).replace("\\n", "\n")
+            tokens.append(TokenMeta(text=text, was_quoted=False))
 
     return tokens
 

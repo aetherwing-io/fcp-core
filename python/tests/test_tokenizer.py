@@ -66,6 +66,36 @@ class TestTokenize:
             "connect", "Auth Service", "->", "UserDB", "label:queries", "style:dashed"
         ]
 
+    def test_escaped_double_quotes_in_quoted_string(self):
+        # Backslash-escaped quotes inside double-quoted strings
+        result = tokenize('label A "say \\"hello\\""')
+        assert result == ["label", "A", 'say "hello"']
+
+    def test_escaped_backslash_in_quoted_string(self):
+        result = tokenize('"path\\\\dir"')
+        assert result == ["path\\dir"]
+
+    def test_backslash_n_in_quoted_string(self):
+        result = tokenize('add svc "Container\\nRegistry"')
+        assert result == ["add", "svc", "Container\nRegistry"]
+
+    def test_backslash_n_in_unquoted_token(self):
+        result = tokenize("add svc Container\\nRegistry")
+        assert result == ["add", "svc", "Container\nRegistry"]
+
+    def test_multiple_backslash_n(self):
+        result = tokenize("add svc A\\nB\\nC")
+        assert result == ["add", "svc", "A\nB\nC"]
+
+    def test_if_formula_with_escaped_quotes(self):
+        # This is the exact pattern that caused the Numbers crash
+        result = tokenize('set H4 "=IF(G4>=1,\\"Exceeded\\",IF(G4>=0.9,\\"On Track\\",\\"At Risk\\"))"')
+        assert result == ["set", "H4", '=IF(G4>=1,"Exceeded",IF(G4>=0.9,"On Track","At Risk"))']
+
+    def test_backslash_n_in_embedded_quoted_value(self):
+        result = tokenize('label:"Line1\\nLine2"')
+        assert result == ['label:"Line1\nLine2"']
+
     def test_unclosed_quote_raises(self):
         with pytest.raises(ValueError):
             tokenize('add svc "unclosed')
