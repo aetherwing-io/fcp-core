@@ -71,7 +71,8 @@ export class SessionDispatcher<Model, Event> {
         this._model = this.hooks.onNew(params);
         this._filePath = null;
         const title = params["title"] ?? "Untitled";
-        return `new "${title}" created`;
+        const digest = this.hooks.getDigest(this._model);
+        return `new "${title}" created. ${digest}`;
       }
 
       case "open": {
@@ -80,7 +81,8 @@ export class SessionDispatcher<Model, Event> {
         try {
           this._model = await this.hooks.onOpen(path);
           this._filePath = path;
-          return `opened "${path}"`;
+          const digest = this.hooks.getDigest(this._model);
+          return `opened "${path}". ${digest}`;
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : String(e);
           return `error: ${msg}`;

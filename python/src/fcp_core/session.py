@@ -126,7 +126,8 @@ class SessionDispatcher(Generic[M, E]):
             self._model = self._hooks.on_new(params)
             self._event_log = EventLog()
             title = params.get("title", "Untitled")
-            return format_result(True, f"New session '{title}'")
+            digest = self._hooks.get_digest(self._model)
+            return format_result(True, f"New session '{title}'. {digest}")
         except Exception as exc:
             return format_result(False, f"Failed to create: {exc}")
 
@@ -140,7 +141,9 @@ class SessionDispatcher(Generic[M, E]):
             self._file_path = path
             if self._model is not None:
                 self._hooks.on_rebuild_indices(self._model)
-            return format_result(True, f"Opened '{path}'")
+            digest = self._hooks.get_digest(self._model) if self._model else ""
+            suffix = f". {digest}" if digest else ""
+            return format_result(True, f"Opened '{path}'{suffix}")
         except Exception as exc:
             return format_result(False, f"Failed to open '{path}': {exc}")
 
