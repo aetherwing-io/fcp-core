@@ -1,14 +1,16 @@
 """Quote-aware tokenizer for FCP op strings.
 
 Splits on whitespace but respects quoted strings (single and double quotes).
+Handles embedded quotes in key:value tokens (e.g. ``title:"Score Chart"``).
 Provides helpers for key:value token detection and parsing.
 """
 
 from __future__ import annotations
 
 import re
-import shlex
 from dataclasses import dataclass
+
+_WHITESPACE = frozenset(" \t\n\r")
 
 
 @dataclass
@@ -19,35 +21,82 @@ class TokenMeta:
     was_quoted: bool
 
 
+def _consume_quoted(s: str, i: int, quote_char: str) -> tuple[str, int]:
+    """Consume characters until the matching *quote_char*, starting after it.
+
+    Returns ``(content, new_index)`` where *content* excludes the delimiters.
+    Raises :class:`ValueError` on unclosed quote.
+    """
+    n = len(s)
+    i += 1  # skip opening quote
+    buf: list[str] = []
+    while i < n:
+        ch = s[i]
+        if ch == quote_char:
+            return "".join(buf), i + 1  # skip closing quote
+        buf.append(ch)
+        i += 1
+    raise ValueError("No closing quotation")
+
+
 def tokenize_with_meta(op_string: str) -> list[TokenMeta]:
     """Split *op_string* on whitespace, respecting quoted substrings.
 
-    Returns structured tokens that preserve whether each token was
-    originally quoted.  This allows downstream code (e.g. ``parse_op``)
-    to skip key:value classification for quoted tokens like ``"LTV:CAC"``.
+    Handles three quoting scenarios:
 
-    Examples
-    --------
-    >>> tokenize_with_meta('set A1 "LTV:CAC"')
-    [TokenMeta(text='set', was_quoted=False),
-     TokenMeta(text='A1', was_quoted=False),
-     TokenMeta(text='LTV:CAC', was_quoted=True)]
+    1. **Standalone quotes** — token starts with ``"`` or ``'``.
+       Quotes are stripped, ``was_quoted=True``.
+       ``"LTV:CAC"`` → ``TokenMeta(text='LTV:CAC', was_quoted=True)``
+
+    2. **Embedded quotes** — quote appears mid-token (e.g. after ``:``)
+       in a ``key:"value with spaces"`` pattern.  The quotes are preserved
+       in the token text so ``parse_key_value`` can strip them later.
+       ``was_quoted=False``.
+       ``title:"Score Chart"`` → ``TokenMeta(text='title:"Score Chart"', was_quoted=False)``
+
+    3. **No quotes** — plain token, ``was_quoted=False``.
+
+    Raises :class:`ValueError` on unclosed standalone quotes.
     """
-    lexer = shlex.shlex(op_string, posix=False)
-    lexer.whitespace_split = True
-    lexer.whitespace = " \t\n\r"
-    lexer.commenters = ""  # disable # as comment char
+    tokens: list[TokenMeta] = []
+    i = 0
+    n = len(op_string)
 
-    result: list[TokenMeta] = []
-    for raw_token in lexer:
-        # Detect if the token was quoted (shlex posix=False preserves quotes)
-        if (raw_token.startswith('"') and raw_token.endswith('"') and len(raw_token) >= 2) or \
-           (raw_token.startswith("'") and raw_token.endswith("'") and len(raw_token) >= 2):
-            result.append(TokenMeta(text=raw_token[1:-1], was_quoted=True))
+    while i < n:
+        # Skip whitespace
+        while i < n and op_string[i] in _WHITESPACE:
+            i += 1
+        if i >= n:
+            break
+
+        ch = op_string[i]
+
+        if ch in ('"', "'"):
+            # Standalone quoted string
+            content, i = _consume_quoted(op_string, i, ch)
+            tokens.append(TokenMeta(text=content, was_quoted=True))
         else:
-            result.append(TokenMeta(text=raw_token, was_quoted=False))
+            # Unquoted token — accumulate until whitespace, handling
+            # embedded quotes (e.g. title:"Score Chart") as sub-regions
+            buf: list[str] = []
+            while i < n and op_string[i] not in _WHITESPACE:
+                ch = op_string[i]
+                if ch in ('"', "'"):
+                    # Embedded quote — preserve delimiters in token text
+                    buf.append(ch)
+                    i += 1
+                    while i < n and op_string[i] != ch:
+                        buf.append(op_string[i])
+                        i += 1
+                    if i < n:
+                        buf.append(op_string[i])  # closing quote
+                        i += 1
+                else:
+                    buf.append(ch)
+                    i += 1
+            tokens.append(TokenMeta(text="".join(buf), was_quoted=False))
 
-    return result
+    return tokens
 
 
 def tokenize(op_string: str) -> list[str]:
