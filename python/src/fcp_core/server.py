@@ -212,8 +212,8 @@ def create_fcp_server(
         return TextContent(type="text", text=session.dispatch(action))
 
     @mcp.tool(name=f"{domain}_help")
-    def get_help() -> TextContent:
+    def get_help() -> str:
         f"""Returns the {domain} reference card with all syntax."""
-        return TextContent(type="text", text=reference_card)
+        return reference_card
 
     return mcp
