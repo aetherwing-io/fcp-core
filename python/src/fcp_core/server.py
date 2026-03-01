@@ -185,7 +185,7 @@ def create_fcp_server(
     tool_description = _build_tool_description(domain, registry, extra_sections)
     reference_card = registry.generate_reference_card(extra_sections)
 
-    @mcp.tool(name=domain, description=tool_description)
+    @mcp.tool(name=domain, description=tool_description, structured_output=False)
     def execute_ops(ops: list[str]) -> TextContent:
         if session.model is None:
             return TextContent(type="text", text=format_result(False, "No model loaded. Use session 'new' or 'open' first."))
@@ -199,19 +199,19 @@ def create_fcp_server(
             results.append(format_result(result.success, result.message, result.prefix))
         return TextContent(type="text", text="\n".join(results))
 
-    @mcp.tool(name=f"{domain}_query")
+    @mcp.tool(name=f"{domain}_query", structured_output=False)
     def execute_query(q: str) -> TextContent:
         f"""Query {domain} state."""
         if session.model is None:
             return TextContent(type="text", text=format_result(False, "No model loaded."))
         return TextContent(type="text", text=adapter.dispatch_query(q, session.model))
 
-    @mcp.tool(name=f"{domain}_session")
+    @mcp.tool(name=f"{domain}_session", structured_output=False)
     def execute_session(action: str) -> TextContent:
         f"""Session: 'new "Title"', 'open ./file', 'save', 'checkpoint v1', 'undo', 'redo'"""
         return TextContent(type="text", text=session.dispatch(action))
 
-    @mcp.tool(name=f"{domain}_help")
+    @mcp.tool(name=f"{domain}_help", structured_output=False)
     def get_help() -> str:
         f"""Returns the {domain} reference card with all syntax."""
         return reference_card
