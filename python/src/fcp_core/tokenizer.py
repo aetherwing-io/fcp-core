@@ -133,6 +133,9 @@ def is_key_value(token: str) -> bool:
 def parse_key_value(token: str) -> tuple[str, str]:
     """Split *token* on the first ``:`` and return ``(key, value)``."""
     key, _, value = token.partition(":")
+    # Strip surrounding quotes preserved by posix=False tokenization
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+        value = value[1:-1]
     return key, value
 
 

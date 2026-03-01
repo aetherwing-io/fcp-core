@@ -149,6 +149,12 @@ class TestParseKeyValue:
     def test_multiple_colons(self):
         assert parse_key_value("a:b:c") == ("a", "b:c")
 
+    def test_quoted_value_stripped(self):
+        assert parse_key_value('title:"Score Chart"') == ("title", "Score Chart")
+
+    def test_single_quoted_value_stripped(self):
+        assert parse_key_value("title:'Score Chart'") == ("title", "Score Chart")
+
 
 class TestIsSelector:
     def test_selector(self):
