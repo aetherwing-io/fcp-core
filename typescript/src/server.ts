@@ -143,10 +143,22 @@ export function createFcpServer<Model, Event>(
         };
       }
 
+      // Pre-process: split ops containing embedded newlines into separate ops.
+      // LLMs sometimes send data blocks as a single string with \n instead of
+      // separate array elements — expand them so data block mode works correctly.
+      const expandedOps: string[] = [];
+      for (const raw of ops) {
+        if (raw.includes("\n")) {
+          expandedOps.push(...raw.split("\n").filter((line) => line.trim()));
+        } else {
+          expandedOps.push(raw);
+        }
+      }
+
       const lines: string[] = [];
       let hasErrors = false;
 
-      for (const opStr of ops) {
+      for (const opStr of expandedOps) {
         const parsed = parseOp(opStr, isPositional);
         if (isParseError(parsed)) {
           lines.push(`ERROR: ${parsed.error}`);

@@ -203,6 +203,17 @@ def create_fcp_server(
         if session.model is None:
             return TextContent(type="text", text=format_result(False, "No model loaded. Use session 'new' or 'open' first."))
 
+        # Pre-process: split ops containing embedded newlines into separate ops.
+        # LLMs sometimes send data blocks as a single string with \n instead of
+        # separate array elements — expand them so data block mode works correctly.
+        expanded: list[str] = []
+        for raw in ops:
+            if '\n' in raw:
+                expanded.extend(line for line in raw.split('\n') if line.strip())
+            else:
+                expanded.append(raw)
+        ops = expanded
+
         # Snapshot for batch atomicity (C7) — adapter opts in via take_snapshot
         take_snap = getattr(adapter, 'take_snapshot', None)
         snapshot = take_snap(session.model) if take_snap else None
