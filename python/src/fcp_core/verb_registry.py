@@ -67,17 +67,19 @@ class VerbRegistry:
             cat_verbs = [v for v in self._verbs if v.category == cat]
             if not cat_verbs:
                 continue
-            # Title-case the category name
-            cat_title = cat.replace("_", " ").replace("-", " ").title()
-            lines.append(f"### {cat_title}")
+            lines.append(f"{cat.replace('_', ' ').replace('-', ' ').upper()}:")
             for v in cat_verbs:
                 lines.append(f"  {v.syntax}")
             lines.append("")
 
         if extra_sections:
             for title, content in extra_sections.items():
-                lines.append(f"## {title}")
+                lines.append(f"{title.upper()}:")
                 lines.append(content)
                 lines.append("")
+
+        # Remove trailing empty lines
+        while lines and lines[-1] == "":
+            lines.pop()
 
         return "\n".join(lines)

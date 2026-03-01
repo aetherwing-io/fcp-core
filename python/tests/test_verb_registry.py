@@ -52,8 +52,8 @@ class TestReferenceCard:
             VerbSpec(verb="connect", syntax="connect SRC -> TGT", category="create"),
         ])
         card = registry.generate_reference_card()
-        assert "### Create" in card
-        assert "### Edit" in card
+        assert "CREATE:" in card
+        assert "EDIT:" in card
         assert "add TYPE LABEL" in card
         assert "remove REF" in card
         assert "connect SRC -> TGT" in card
@@ -64,13 +64,13 @@ class TestReferenceCard:
         card = registry.generate_reference_card(extra_sections={
             "Selectors": "@type:TYPE  @group:NAME  @all",
         })
-        assert "## Selectors" in card
+        assert "SELECTORS:" in card
         assert "@type:TYPE" in card
 
     def test_empty_registry(self):
         registry = VerbRegistry()
         card = registry.generate_reference_card()
-        assert card == ""  # no categories, no content
+        assert card == ""  # no categories, no content (trailing lines stripped)
 
     def test_category_order_preserved(self):
         registry = VerbRegistry()
@@ -80,6 +80,6 @@ class TestReferenceCard:
             VerbSpec(verb="m", syntax="m", category="zebra"),
         ])
         card = registry.generate_reference_card()
-        zebra_pos = card.index("### Zebra")
-        alpha_pos = card.index("### Alpha")
+        zebra_pos = card.index("ZEBRA:")
+        alpha_pos = card.index("ALPHA:")
         assert zebra_pos < alpha_pos  # zebra first (insertion order)
