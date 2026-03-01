@@ -3,11 +3,13 @@
 import pytest
 
 from fcp_core.tokenizer import (
+    TokenMeta,
     is_arrow,
     is_key_value,
     is_selector,
     parse_key_value,
     tokenize,
+    tokenize_with_meta,
 )
 
 
@@ -174,3 +176,41 @@ class TestIsArrow:
 
     def test_partial_arrow(self):
         assert is_arrow("-") is False
+
+
+class TestTokenizeWithMeta:
+    def test_basic_tokens(self):
+        result = tokenize_with_meta("add svc AuthService")
+        assert len(result) == 3
+        assert all(not t.was_quoted for t in result)
+        assert result[0].text == "add"
+
+    def test_quoted_string_flagged(self):
+        result = tokenize_with_meta('set A1 "LTV:CAC"')
+        assert len(result) == 3
+        assert result[0] == TokenMeta(text="set", was_quoted=False)
+        assert result[1] == TokenMeta(text="A1", was_quoted=False)
+        assert result[2] == TokenMeta(text="LTV:CAC", was_quoted=True)
+
+    def test_single_quoted_flagged(self):
+        result = tokenize_with_meta("set A1 'LTV:CAC'")
+        assert result[2].was_quoted is True
+        assert result[2].text == "LTV:CAC"
+
+    def test_key_value_not_quoted(self):
+        result = tokenize_with_meta("style Node fill:#ff0000")
+        assert result[2].was_quoted is False
+        assert result[2].text == "fill:#ff0000"
+
+    def test_mixed_quoted_and_unquoted(self):
+        result = tokenize_with_meta('set A11 "LTV:CAC" fmt:$#,##0')
+        assert result[2].was_quoted is True
+        assert result[2].text == "LTV:CAC"
+        assert result[3].was_quoted is False
+        assert result[3].text == "fmt:$#,##0"
+
+    def test_text_roundtrip_matches_tokenize(self):
+        op = 'connect "Auth Service" -> UserDB label:queries'
+        meta_texts = [t.text for t in tokenize_with_meta(op)]
+        plain_texts = tokenize(op)
+        assert meta_texts == plain_texts

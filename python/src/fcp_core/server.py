@@ -7,7 +7,7 @@ Embeds the reference card in the main tool description.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Any, Callable, Generic, Protocol, TypeVar
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent
@@ -146,6 +146,7 @@ def create_fcp_server(
     verbs: list[VerbSpec],
     *,
     extra_sections: dict[str, str] | None = None,
+    is_positional: Callable[[str], bool] | None = None,
     **kwargs,
 ) -> FastMCP:
     """Create a fully wired MCP server for the given domain.
@@ -166,6 +167,10 @@ def create_fcp_server(
         Verb specifications for this domain.
     extra_sections : dict[str, str] | None
         Additional sections for the reference card.
+    is_positional : callable, optional
+        Domain-level callback for ``parse_op``: ``is_positional(token) -> bool``.
+        If provided, tokens matching this predicate are classified as positionals
+        instead of key:value params (e.g. column ranges like ``B:G``).
     **kwargs
         Additional arguments passed to FastMCP constructor.
 
@@ -204,7 +209,7 @@ def create_fcp_server(
 
         results: list[str] = []
         for i, op_str in enumerate(ops):
-            parsed = parse_op(op_str)
+            parsed = parse_op(op_str, is_positional=is_positional)
             if isinstance(parsed, ParseError):
                 if snapshot is not None:
                     adapter.restore_snapshot(session.model, snapshot)

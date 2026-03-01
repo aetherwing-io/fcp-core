@@ -61,6 +61,11 @@ export interface FcpServerConfig<Model, Event> {
   verbs: VerbSpec[];
   /** Optional reference card configuration. */
   referenceCard?: { sections?: Record<string, string> };
+  /**
+   * Domain-level callback: returns true to force a token as positional
+   * instead of key:value (e.g. column ranges like B:G).
+   */
+  isPositional?: (token: string) => boolean;
 }
 
 /**
@@ -75,7 +80,7 @@ export interface FcpServerConfig<Model, Event> {
 export function createFcpServer<Model, Event>(
   config: FcpServerConfig<Model, Event>,
 ): McpServer {
-  const { domain, adapter, verbs, referenceCard } = config;
+  const { domain, adapter, verbs, referenceCard, isPositional } = config;
 
   // Build registry and reference card
   const registry = new VerbRegistry();
@@ -142,7 +147,7 @@ export function createFcpServer<Model, Event>(
       let hasErrors = false;
 
       for (const opStr of ops) {
-        const parsed = parseOp(opStr);
+        const parsed = parseOp(opStr, isPositional);
         if (isParseError(parsed)) {
           lines.push(`ERROR: ${parsed.error}`);
           hasErrors = true;

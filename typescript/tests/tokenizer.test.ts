@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tokenize, isKeyValue, isCellRange, parseKeyValue, parseKeyValueWithMeta, isArrow, isSelector } from "../src/tokenizer.js";
+import { tokenize, tokenizeWithMeta, isKeyValue, isCellRange, parseKeyValue, parseKeyValueWithMeta, isArrow, isSelector } from "../src/tokenizer.js";
 
 describe("tokenize", () => {
   it("splits simple tokens", () => {
@@ -263,5 +263,39 @@ describe("isSelector", () => {
   it("rejects non-@ tokens", () => {
     expect(isSelector("type:db")).toBe(false);
     expect(isSelector("add")).toBe(false);
+  });
+});
+
+describe("tokenizeWithMeta", () => {
+  it("flags quoted strings with wasQuoted", () => {
+    const result = tokenizeWithMeta('set A1 "LTV:CAC"');
+    expect(result).toHaveLength(3);
+    expect(result[0]).toEqual({ text: "set", wasQuoted: false });
+    expect(result[1]).toEqual({ text: "A1", wasQuoted: false });
+    expect(result[2]).toEqual({ text: "LTV:CAC", wasQuoted: true });
+  });
+
+  it("marks unquoted tokens as wasQuoted=false", () => {
+    const result = tokenizeWithMeta("add svc AuthService");
+    expect(result).toHaveLength(3);
+    expect(result.every(t => !t.wasQuoted)).toBe(true);
+  });
+
+  it("handles key:value as unquoted", () => {
+    const result = tokenizeWithMeta("style Node fill:#ff0000");
+    expect(result[2]).toEqual({ text: "fill:#ff0000", wasQuoted: false });
+  });
+
+  it("handles mixed quoted and unquoted", () => {
+    const result = tokenizeWithMeta('set A11 "LTV:CAC" fmt:$#,##0');
+    expect(result[2]).toEqual({ text: "LTV:CAC", wasQuoted: true });
+    expect(result[3]).toEqual({ text: "fmt:$#,##0", wasQuoted: false });
+  });
+
+  it("text roundtrip matches tokenize", () => {
+    const op = 'connect "Auth Service" -> UserDB label:queries';
+    const metaTexts = tokenizeWithMeta(op).map(t => t.text);
+    const plainTexts = tokenize(op);
+    expect(metaTexts).toEqual(plainTexts);
   });
 });

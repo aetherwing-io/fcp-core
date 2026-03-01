@@ -139,6 +139,50 @@ describe("parseOp", () => {
     expect(result.positionals).toEqual(["A1:F1", "outline"]);
     expect(result.params).toEqual({ line: "thin", color: "#000000" });
   });
+
+  // --- Quoted string colon handling ---
+
+  it("treats quoted colon string as positional, not key:value", () => {
+    const result = parseOp('set A11 "LTV:CAC"');
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["A11", "LTV:CAC"]);
+    expect(result.params).toEqual({});
+  });
+
+  it("handles quoted string with key:value param", () => {
+    const result = parseOp('set A11 "LTV:CAC" fmt:$#,##0');
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["A11", "LTV:CAC"]);
+    expect(result.params).toEqual({ "fmt": "$#,##0" });
+  });
+
+  it("handles quoted string without colon", () => {
+    const result = parseOp('set A1 "Hello World"');
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["A1", "Hello World"]);
+  });
+
+  // --- isPositional extension point ---
+
+  it("uses isPositional callback to force column range as positional", () => {
+    const colRangeRe = /^[A-Za-z]{1,3}:[A-Za-z]{1,3}$/;
+    const result = parseOp("width B:G 13", (token) => colRangeRe.test(token));
+    if (isParseError(result)) return;
+    expect(result.positionals).toEqual(["B:G", "13"]);
+    expect(result.params).toEqual({});
+  });
+
+  it("isPositional callback does not intercept real params", () => {
+    const result = parseOp("style A1 fill:#ff0000", () => false);
+    if (isParseError(result)) return;
+    expect(result.params).toEqual({ fill: "#ff0000" });
+  });
+
+  it("without isPositional, column ranges are key:value", () => {
+    const result = parseOp("width B:G 13");
+    if (isParseError(result)) return;
+    expect(result.params).toHaveProperty("B");
+  });
 });
 
 describe("isParseError", () => {

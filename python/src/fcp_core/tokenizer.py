@@ -8,6 +8,46 @@ from __future__ import annotations
 
 import re
 import shlex
+from dataclasses import dataclass
+
+
+@dataclass
+class TokenMeta:
+    """A token with metadata about how it was originally written."""
+
+    text: str
+    was_quoted: bool
+
+
+def tokenize_with_meta(op_string: str) -> list[TokenMeta]:
+    """Split *op_string* on whitespace, respecting quoted substrings.
+
+    Returns structured tokens that preserve whether each token was
+    originally quoted.  This allows downstream code (e.g. ``parse_op``)
+    to skip key:value classification for quoted tokens like ``"LTV:CAC"``.
+
+    Examples
+    --------
+    >>> tokenize_with_meta('set A1 "LTV:CAC"')
+    [TokenMeta(text='set', was_quoted=False),
+     TokenMeta(text='A1', was_quoted=False),
+     TokenMeta(text='LTV:CAC', was_quoted=True)]
+    """
+    lexer = shlex.shlex(op_string, posix=False)
+    lexer.whitespace_split = True
+    lexer.whitespace = " \t\n\r"
+    lexer.commenters = ""  # disable # as comment char
+
+    result: list[TokenMeta] = []
+    for raw_token in lexer:
+        # Detect if the token was quoted (shlex posix=False preserves quotes)
+        if (raw_token.startswith('"') and raw_token.endswith('"') and len(raw_token) >= 2) or \
+           (raw_token.startswith("'") and raw_token.endswith("'") and len(raw_token) >= 2):
+            result.append(TokenMeta(text=raw_token[1:-1], was_quoted=True))
+        else:
+            result.append(TokenMeta(text=raw_token, was_quoted=False))
+
+    return result
 
 
 def tokenize(op_string: str) -> list[str]:
@@ -20,11 +60,7 @@ def tokenize(op_string: str) -> list[str]:
     >>> tokenize("add svc 'My Service' theme:blue")
     ['add', 'svc', 'My Service', 'theme:blue']
     """
-    lexer = shlex.shlex(op_string, posix=True)
-    lexer.whitespace_split = True
-    lexer.whitespace = " \t\n\r"
-    lexer.commenters = ""  # disable # as comment char
-    return list(lexer)
+    return [t.text for t in tokenize_with_meta(op_string)]
 
 
 # Patterns for cell range detection (spreadsheet A1 notation).

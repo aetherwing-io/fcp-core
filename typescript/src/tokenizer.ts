@@ -1,9 +1,20 @@
 /**
- * Tokenize an operation string by whitespace, respecting quoted strings.
- * "add svc \"Auth Service\" theme:blue" -> ["add", "svc", "Auth Service", "theme:blue"]
+ * A token with metadata about how it was originally written.
  */
-export function tokenize(input: string): string[] {
-  const tokens: string[] = [];
+export interface TokenMeta {
+  text: string;
+  wasQuoted: boolean;
+}
+
+/**
+ * Tokenize an operation string by whitespace, respecting quoted strings.
+ * Returns structured tokens that preserve whether each token was originally quoted.
+ *
+ * This allows downstream code (e.g. parseOp) to skip key:value classification
+ * for quoted tokens like "LTV:CAC".
+ */
+export function tokenizeWithMeta(input: string): TokenMeta[] {
+  const tokens: TokenMeta[] = [];
   let i = 0;
   const len = input.length;
 
@@ -33,7 +44,7 @@ export function tokenize(input: string): string[] {
         }
       }
       if (i < len) i++; // skip closing quote
-      tokens.push(token);
+      tokens.push({ text: token, wasQuoted: true });
     } else {
       // Unquoted token — preserve embedded quotes (e.g., key:"value" → key:"value")
       let token = "";
@@ -68,11 +79,19 @@ export function tokenize(input: string): string[] {
         }
       }
       // Convert literal \n in unquoted tokens to actual newlines
-      tokens.push(token.replace(/\\n/g, "\n"));
+      tokens.push({ text: token.replace(/\\n/g, "\n"), wasQuoted: false });
     }
   }
 
   return tokens;
+}
+
+/**
+ * Tokenize an operation string by whitespace, respecting quoted strings.
+ * "add svc \"Auth Service\" theme:blue" -> ["add", "svc", "Auth Service", "theme:blue"]
+ */
+export function tokenize(input: string): string[] {
+  return tokenizeWithMeta(input).map(t => t.text);
 }
 
 /**

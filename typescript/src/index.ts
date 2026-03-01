@@ -1,6 +1,8 @@
 // Tokenizer
 export {
   tokenize,
+  tokenizeWithMeta,
+  type TokenMeta,
   isKeyValue,
   isCellRange,
   parseKeyValue,

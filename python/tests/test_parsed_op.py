@@ -161,3 +161,54 @@ class TestParseOp:
         assert isinstance(result, ParsedOp)
         assert result.positionals == ["D2", "=SUM(A2:C2)"]
         assert result.params == {"fmt": "$#,##0"}
+
+    # --- Quoted string colon handling ---
+
+    def test_quoted_colon_is_positional(self):
+        """Quoted strings with colons must NOT be split as key:value."""
+        result = parse_op('set A11 "LTV:CAC"')
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A11", "LTV:CAC"]
+        assert result.params == {}
+
+    def test_quoted_string_with_key_value_param(self):
+        result = parse_op('set A11 "LTV:CAC" fmt:$#,##0')
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A11", "LTV:CAC"]
+        assert result.params == {"fmt": "$#,##0"}
+
+    def test_quoted_no_colon_still_positional(self):
+        result = parse_op('set A1 "Hello World"')
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["A1", "Hello World"]
+
+    # --- is_positional extension point ---
+
+    def test_is_positional_callback(self):
+        """Domain callback can force tokens as positional."""
+        import re
+        col_range_re = re.compile(r"^[A-Za-z]{1,3}:[A-Za-z]{1,3}$")
+
+        result = parse_op(
+            "width B:G 13",
+            is_positional=lambda t: bool(col_range_re.match(t)),
+        )
+        assert isinstance(result, ParsedOp)
+        assert result.positionals == ["B:G", "13"]
+        assert result.params == {}
+
+    def test_is_positional_does_not_affect_real_params(self):
+        """is_positional callback should not intercept real key:value."""
+        result = parse_op(
+            "style A1 fill:#ff0000",
+            is_positional=lambda t: False,
+        )
+        assert isinstance(result, ParsedOp)
+        assert result.params == {"fill": "#ff0000"}
+
+    def test_is_positional_none_default(self):
+        """Without callback, column ranges are still treated as key:value."""
+        result = parse_op("width B:G 13")
+        assert isinstance(result, ParsedOp)
+        # Without callback, B:G gets classified as key:value
+        assert "B" in result.params
