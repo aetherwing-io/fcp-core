@@ -7,7 +7,7 @@ Embeds the reference card in the main tool description.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar
+from typing import Any, Generic, Protocol, TypeVar
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent
@@ -69,6 +69,14 @@ class FcpDomainAdapter(Protocol[M, E]):
     def replay_event(self, event: E, model: M) -> None:
         """Replay a single event (for redo)."""
         ...
+
+    def take_snapshot(self, model: M) -> Any | None:
+        """Return opaque snapshot for batch rollback. Return None to skip atomicity."""
+        return None
+
+    def restore_snapshot(self, model: M, snapshot: Any) -> None:
+        """Restore model from snapshot and rebuild indices."""
+        pass
 
 
 class _AdapterSessionHooks(Generic[M, E]):
@@ -189,14 +197,41 @@ def create_fcp_server(
     def execute_ops(ops: list[str]) -> TextContent:
         if session.model is None:
             return TextContent(type="text", text=format_result(False, "No model loaded. Use session 'new' or 'open' first."))
+
+        # Snapshot for batch atomicity (C7) — adapter opts in via take_snapshot
+        take_snap = getattr(adapter, 'take_snapshot', None)
+        snapshot = take_snap(session.model) if take_snap else None
+
         results: list[str] = []
-        for op_str in ops:
+        for i, op_str in enumerate(ops):
             parsed = parse_op(op_str)
             if isinstance(parsed, ParseError):
+                if snapshot is not None:
+                    adapter.restore_snapshot(session.model, snapshot)
+                    msg = (
+                        f"! Batch failed at op {i + 1}: {op_str}. "
+                        f"Error: {parsed.error}. "
+                        f"State rolled back ({i} ops reverted)."
+                    )
+                    return TextContent(type="text", text=msg)
                 results.append(format_result(False, parsed.error))
                 continue
+
             result = adapter.dispatch_op(parsed, session.model, session.event_log)
-            results.append(format_result(result.success, result.message, result.prefix))
+
+            if not result.success and result.message and snapshot is not None:
+                adapter.restore_snapshot(session.model, snapshot)
+                msg = (
+                    f"! Batch failed at op {i + 1}: {op_str}. "
+                    f"Error: {result.message}. "
+                    f"State rolled back ({i} ops reverted)."
+                )
+                return TextContent(type="text", text=msg)
+
+            formatted = format_result(result.success, result.message, result.prefix)
+            if formatted.strip():
+                results.append(formatted)
+
         return TextContent(type="text", text="\n".join(results))
 
     @mcp.tool(name=f"{domain}_query", structured_output=False)
