@@ -30,6 +30,7 @@ class OpResult:
     success: bool
     message: str
     prefix: str = ""
+    image: dict[str, str] | None = None  # {"base64": ..., "mimeType": ...}
 
 
 class FcpDomainAdapter(Protocol[M, E]):

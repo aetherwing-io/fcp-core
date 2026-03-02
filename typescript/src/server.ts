@@ -15,6 +15,7 @@ export interface OpResult {
   success: boolean;
   message: string;
   prefix?: string;
+  image?: { base64: string; mimeType: string };
 }
 
 /**
@@ -164,6 +165,7 @@ export function createFcpServer<Model, Event>(
       }
 
       const lines: string[] = [];
+      const images: Array<{ base64: string; mimeType: string }> = [];
       let hasErrors = false;
 
       for (const opStr of expandedOps) {
@@ -189,13 +191,26 @@ export function createFcpServer<Model, Event>(
         const result = await adapter.dispatchOp(parsed, model, eventLog);
         lines.push(formatResult(result.success, result.message, result.prefix));
         if (!result.success) hasErrors = true;
+
+        // Collect images (e.g., snapshot rendered via ops tool)
+        if (result.image) {
+          images.push(result.image);
+        }
       }
 
       // Append digest
       lines.push(adapter.getDigest(model));
 
+      const content: Array<
+        | { type: "text"; text: string }
+        | { type: "image"; data: string; mimeType: string }
+      > = [];
+      for (const img of images) {
+        content.push({ type: "image" as const, data: img.base64, mimeType: img.mimeType });
+      }
+      content.push({ type: "text" as const, text: lines.join("\n") });
       return {
-        content: [{ type: "text" as const, text: lines.join("\n") }],
+        content,
         isError: hasErrors,
       };
     },
