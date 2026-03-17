@@ -1,6 +1,6 @@
 # fcp-core
 
-Shared framework for building [FCP](https://github.com/aetherwing-io/fcp) servers -- dual TypeScript and Python implementations.
+Shared framework for building [FCP](https://github.com/os-tack/fcp) servers -- dual TypeScript and Python implementations.
 
 ## What It Does
 
