@@ -258,16 +258,14 @@ def create_fcp_server(
         digest = adapter.get_digest(session.model)
         return TextContent(type="text", text=f"{body}\n{digest}" if digest else body)
 
-    @mcp.tool(name=f"{domain}_query", structured_output=False)
+    @mcp.tool(name=f"{domain}_query", description=f"Query {domain} state.", structured_output=False)
     def execute_query(q: str) -> TextContent:
-        f"""Query {domain} state."""
         if session.model is None:
             return TextContent(type="text", text=format_result(False, "No model loaded."))
         return TextContent(type="text", text=adapter.dispatch_query(q, session.model))
 
-    @mcp.tool(name=f"{domain}_session", structured_output=False)
+    @mcp.tool(name=f"{domain}_session", description=f"Session: 'new \"Title\"', 'open ./file', 'save', 'checkpoint v1', 'undo', 'redo'", structured_output=False)
     def execute_session(action: str) -> TextContent:
-        f"""Session: 'new "Title"', 'open ./file', 'save', 'checkpoint v1', 'undo', 'redo'"""
         log.info("Session: %s", action)
         text = session.dispatch(action)
         if session.model is not None:
@@ -275,9 +273,8 @@ def create_fcp_server(
             text = f"{text}\n{digest}" if digest else text
         return TextContent(type="text", text=text)
 
-    @mcp.tool(name=f"{domain}_help", structured_output=False)
+    @mcp.tool(name=f"{domain}_help", description=f"Returns the {domain} reference card with all syntax.", structured_output=False)
     def get_help() -> str:
-        f"""Returns the {domain} reference card with all syntax."""
         return reference_card
 
     # ── Resources ────────────────────────────────────────
